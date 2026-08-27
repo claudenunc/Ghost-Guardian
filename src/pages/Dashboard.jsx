@@ -1,182 +1,314 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useApp } from '../contexts/AppContext';
-import { MessageSquare, CheckCircle, AlertTriangle, Clock, TrendingUp, Users, Zap, Brain, ArrowRight, Shield, Eye, Sparkles, Ghost } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import {
+  Shield,
+  ShieldAlert,
+  Zap,
+  Clock,
+  Check,
+  ArrowRight,
+  AlertTriangle,
+  Heart,
+  Sparkles,
+  Bot,
+  RefreshCw,
+  Eye,
+  Lock,
+  MessageSquare,
+  Flame,
+  UserCheck,
+} from 'lucide-react';
+import {
+  Chip,
+  ClassificationChip,
+  RiskChip,
+  SectionTitle,
+  StatBlock,
+  Button,
+} from '../components/guardian/atoms';
+import { useGuardian } from '../lib/store';
 
 export default function Dashboard() {
-  const { state } = useApp();
-  const navigate = useNavigate();
-  const { processedComments, analytics, intelligence, communityMembers, creator } = state;
+  const { comments, commenters, videos, stateFor, settings, updateSettings, approve, regenerate, activity } = useGuardian();
 
-  const pending = processedComments.filter(p => p.status === 'pending').length;
-  const escalated = processedComments.filter(p => p.strategy?.requiresHumanReview || p.classification?.risk === 'critical').length;
-  const approved = analytics.repliesApproved;
-  const totalProcessed = analytics.commentsProcessed;
+  const pending = comments.filter((c) => stateFor(c.id).status === 'pending');
+  const escalations = pending.filter(
+    (c) => c.risk === 'critical' || c.risk === 'high' || c.recommendedAction === 'human_review'
+  );
+  
+  const highEngagement = comments.filter((c) => c.likes > 500);
+  const shieldedSpamCount = comments.filter((c) => c.classification === 'SPAM' || c.classification === 'HARASSMENT' || c.classification === 'THREAT').length;
+  
+  // Ready to quick-approve (low risk, high confidence, not escalated)
+  const quickApproveQueue = pending
+    .filter((c) => c.risk === 'low' && c.confidence > 0.88 && c.drafts?.warm)
+    .slice(0, 3);
 
-  // You should see this
-  const shouldSeeComments = intelligence?.youShouldSeeThis?.map(item => {
-    const pc = processedComments.find(p => p.comment.id === item.commentId);
-    return pc ? { ...item, comment: pc.comment, classification: pc.classification } : null;
-  }).filter(Boolean) || [];
-
-  // Content opportunities
-  const opportunities = intelligence?.contentOpportunities || [];
+  const approvedCount = Object.values(stateFor).filter(
+    (s) => s.status === 'approved' || s.status === 'edited'
+  ).length;
 
   return (
-    <div className="page-content">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-6)', flexWrap: 'wrap', gap: 'var(--space-3)' }}>
+    <div className="space-y-8 animate-in fade-in duration-300">
+      {/* Top Banner / Pulse Header */}
+      <div className="ghost-panel ghost-glow p-6 sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 border-[#4de1dc]/30">
         <div>
-          <h1 className="page-title">Guardian Dashboard</h1>
-          <p className="page-subtitle" style={{ margin: 0 }}>
-            {state.guardianPaused ? '⏸ Guardian is paused' : '🛡️ Your Guardian is watching'}
-            {state.isDemo && ' · Demo Mode'}
+          <div className="flex items-center gap-2">
+            <span className="pulse-dot bg-[#4de1dc]" />
+            <span className="text-xs font-semibold tracking-[0.2em] text-[#4de1dc] uppercase">
+              Creator Command Center
+            </span>
+          </div>
+          <h1 className="mt-2 font-display text-2xl sm:text-4xl text-white">
+            Your Guardian is actively shielding your attention.
+          </h1>
+          <p className="mt-2 text-sm text-[#8f97b0] max-w-2xl">
+            {settings.paused
+              ? '⏸ Shield is currently paused — automated filtering and drafting are suspended.'
+              : `Operating in ${settings.mode.toUpperCase()} mode. ${shieldedSpamCount} hostile or spam messages shielded from your focus.`}
           </p>
         </div>
-      </div>
 
-      {/* Quick Stats */}
-      <div className="grid-auto" style={{ marginBottom: 'var(--space-6)' }}>
-        {[
-          { label: 'New Comments', value: pending, icon: MessageSquare, color: 'var(--primary-400)', onClick: () => navigate('/app/inbox') },
-          { label: 'Needs Attention', value: escalated, icon: AlertTriangle, color: 'var(--rose-400)', onClick: () => navigate('/app/inbox') },
-          { label: 'Approved', value: approved, icon: CheckCircle, color: 'var(--emerald-400)' },
-          { label: 'Time Saved', value: `${analytics.timeSavedMinutes}m`, icon: Clock, color: 'var(--amber-400)' },
-        ].map(stat => (
-          <div key={stat.label} className="card" style={{ cursor: stat.onClick ? 'pointer' : 'default' }} onClick={stat.onClick}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-              <stat.icon size={20} style={{ color: stat.color }} />
-              {stat.onClick && <ArrowRight size={14} style={{ color: 'var(--text-muted)' }} />}
-            </div>
-            <div className="stat-value" style={{ color: stat.color }}>{stat.value}</div>
-            <div className="stat-label">{stat.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Escalated / Risk Alerts */}
-      {escalated > 0 && (
-        <div className="escalation-banner" style={{ marginBottom: 'var(--space-6)' }}>
-          <div className="escalation-banner-icon"><AlertTriangle size={20} /></div>
-          <div className="escalation-banner-content">
-            <div className="escalation-banner-title">HUMAN ATTENTION REQUIRED</div>
-            <div className="escalation-banner-text">{escalated} comment{escalated > 1 ? 's' : ''} flagged for your review — including potential threats or sensitive content.</div>
-          </div>
-          <button onClick={() => navigate('/app/inbox')} className="btn btn-sm btn-danger" style={{ flexShrink: 0 }}>Review Now</button>
+        <div className="flex flex-wrap gap-2.5 shrink-0">
+          <Button asChild size="md">
+            <Link to="/app/inbox" className="gap-2">
+              <MessageSquare size={16} /> Open Inbox ({pending.length})
+            </Link>
+          </Button>
+          <Button asChild size="md" variant="outline">
+            <Link to="/app/voice" className="gap-2">
+              <Sparkles size={16} /> Test Voice
+            </Link>
+          </Button>
         </div>
+      </div>
+
+      {/* Quick Pulse Operations Metrics */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatBlock
+          label="Mental Bandwidth Shielded"
+          value={`${shieldedSpamCount} items`}
+          tone="positive"
+          hint="Hostile & spam comments isolated"
+        />
+        <StatBlock
+          label="Estimated Time Saved"
+          value="184 min"
+          tone="positive"
+          hint="~3 min per triaged discussion"
+        />
+        <StatBlock
+          label="Needs Your Eye"
+          value={escalations.length}
+          tone={escalations.length > 0 ? 'critical' : 'positive'}
+          hint="Critical risk or personal inquiry"
+        />
+        <StatBlock
+          label="Quick Approvals Ready"
+          value={quickApproveQueue.length}
+          tone="attention"
+          hint="High-confidence grounded drafts"
+        />
+      </div>
+
+      {/* URGENT ESCALATIONS STATION */}
+      {escalations.length > 0 && (
+        <section className="space-y-4">
+          <SectionTitle
+            title="⚠️ Urgent Human Attention Required"
+            subtitle="Ghost Guardian identified safety risks or delicate disclosures. These will never be auto-answered."
+            action={
+              <Button asChild size="sm" variant="destructive">
+                <Link to="/app/inbox">Triage in Inbox</Link>
+              </Button>
+            }
+          />
+          <div className="space-y-3">
+            {escalations.map((c) => {
+              const person = commenters.find((p) => p.id === c.commenterId);
+              return (
+                <div key={c.id} className="ghost-panel border-[#f87171]/40 bg-[#f87171]/5 p-5">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <ShieldAlert size={16} className="text-[#f87171]" />
+                      <span className="font-semibold text-sm text-white">{person?.displayName || c.commenterId}</span>
+                      <ClassificationChip value={c.classification} />
+                      <RiskChip risk={c.risk} />
+                    </div>
+                    <span className="text-xs text-[#8f97b0]">
+                      {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="mt-3 text-sm text-white font-medium">"{c.text}"</p>
+                  <p className="mt-2 text-xs text-[#f87171]">
+                    ⚠️ Reason: {c.escalationReason || c.reasoning?.[0]}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }} className="grid-responsive">
-        {/* Your Audience Is Trying To Tell You */}
-        <div className="card" style={{ gridColumn: intelligence?.emergingTopics?.length ? 'span 1' : 'span 2' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-            <Brain size={18} style={{ color: 'var(--primary-400)' }} />
-            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Your Audience Is Trying To Tell You</h3>
+      {/* QUICK APPROVAL STATION (1-Click Action from Dashboard) */}
+      <section className="space-y-4">
+        <SectionTitle
+          title="⚡ Quick-Action Approvals Station"
+          subtitle="Top high-confidence drafts ready for 1-click review directly from the Command Center."
+          action={
+            <Button asChild size="sm" variant="outline">
+              <Link to="/app/inbox">
+                View Full Queue <ArrowRight size={14} />
+              </Link>
+            </Button>
+          }
+        />
+        {quickApproveQueue.length === 0 ? (
+          <div className="ghost-panel p-6 text-center text-sm text-[#8f97b0]">
+            ✨ All quick-action drafts have been reviewed! Check the Inbox for remaining items.
           </div>
-          {intelligence?.topQuestions?.length > 0 ? (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {intelligence.topQuestions.slice(0, 3).map((q, i) => (
-                <div key={i} style={{ padding: 'var(--space-3)', background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-                    <span className="badge badge-info">{q.mentions} mentions</span>
-                  </div>
-                  <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)' }}>{q.question}</p>
-                </div>
-              ))}
-              <button onClick={() => navigate('/app/intelligence')} className="btn btn-ghost btn-sm" style={{ alignSelf: 'flex-start' }}>
-                View All Intelligence <ArrowRight size={14} />
-              </button>
-            </div>
-          ) : (
-            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-muted)' }}>Not enough data yet.</p>
-          )}
-        </div>
-
-        {/* Emerging Topics */}
-        {intelligence?.emergingTopics?.length > 0 && (
-          <div className="card">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-              <TrendingUp size={18} style={{ color: 'var(--amber-400)' }} />
-              <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Emerging Topics</h3>
-            </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-              {intelligence.emergingTopics.map((t, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 'var(--space-3)', background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)' }}>
+        ) : (
+          <div className="grid gap-4 md:grid-cols-3">
+            {quickApproveQueue.map((c) => {
+              const person = commenters.find((p) => p.id === c.commenterId);
+              const state = stateFor(c.id);
+              return (
+                <div key={c.id} className="ghost-panel p-5 flex flex-col justify-between">
                   <div>
-                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>{t.topic}</div>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }}>{t.mentions} mentions</div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-xs font-semibold text-white truncate">{person?.displayName}</span>
+                      <ClassificationChip value={c.classification} />
+                    </div>
+                    <p className="mt-2 text-xs text-[#8f97b0] line-clamp-2 italic">
+                      "{c.text}"
+                    </p>
+                    <div className="mt-3 rounded-xl border border-white/10 bg-[#0d0f17]/60 p-3">
+                      <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[#4de1dc] mb-1">
+                        <span>Draft ({state.activeTone})</span>
+                        <span>{Math.round(c.confidence * 100)}% match</span>
+                      </div>
+                      <p className="text-xs text-white leading-relaxed line-clamp-3">
+                        {state.responseText}
+                      </p>
+                    </div>
                   </div>
-                  <span className={`badge ${t.trend === 'rising' ? 'badge-success' : 'badge-neutral'}`}>
-                    {t.trend === 'rising' ? '↑ Rising' : '— Stable'}
-                  </span>
+
+                  <div className="mt-4 flex items-center gap-2 pt-2 border-t border-white/5">
+                    <Button
+                      size="sm"
+                      className="w-full justify-center"
+                      onClick={() => approve(c.id)}
+                    >
+                      <Check size={14} /> 1-Click Approve
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="outline"
+                      title="Regenerate in different tone"
+                      onClick={() => regenerate(c.id)}
+                    >
+                      <RefreshCw size={13} />
+                    </Button>
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
         )}
-      </div>
+      </section>
 
-      {/* You Should See This */}
-      {shouldSeeComments.length > 0 && (
-        <div className="card" style={{ marginTop: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-            <Eye size={18} style={{ color: 'var(--amber-400)' }} />
-            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>You Should See This</h3>
+      {/* TWO COLUMN SECTION: HIGH-IMPACT THREADS & RECENT GUARDIAN OPERATIONS */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* High Engagement & VIP Discussions */}
+        <section className="space-y-4">
+          <SectionTitle
+            title="🔥 High-Impact Discussions"
+            subtitle="Comments driving significant engagement in the community."
+          />
+          <div className="space-y-3">
+            {highEngagement.slice(0, 3).map((c) => {
+              const person = commenters.find((p) => p.id === c.commenterId);
+              return (
+                <div key={c.id} className="ghost-panel p-4 flex items-start gap-3.5">
+                  <div className="size-9 rounded-xl bg-[#4de1dc]/15 text-[#4de1dc] flex items-center justify-center shrink-0 font-bold text-xs">
+                    {person?.displayName?.[0] || '?'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold text-white">{person?.displayName}</span>
+                      <Chip variant="attention">
+                        <Flame size={12} /> {c.likes.toLocaleString()} likes
+                      </Chip>
+                    </div>
+                    <p className="mt-1 text-xs text-[#e4e7f1] line-clamp-2">"{c.text}"</p>
+                    <div className="mt-2 flex items-center gap-2 text-[11px] text-[#8f97b0]">
+                      <ClassificationChip value={c.classification} />
+                      <span>· {c.replies} replies on YouTube</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-            {shouldSeeComments.slice(0, 4).map((item, i) => (
-              <div key={i} style={{ padding: 'var(--space-4)', background: 'var(--bg-deep)', borderRadius: 'var(--radius-md)', borderLeft: '2px solid var(--amber-400)' }}>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--amber-400)', fontWeight: 600, marginBottom: 'var(--space-2)' }}>{item.reason}</div>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                  "{item.comment.text?.slice(0, 200)}{item.comment.text?.length > 200 ? '...' : ''}"
-                </p>
-                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginTop: 'var(--space-2)' }}>
-                  — {item.comment.author}
+        </section>
+
+        {/* Live Operations & Audit Stream */}
+        <section className="space-y-4">
+          <SectionTitle
+            title="🛡️ Live Shield Operations Log"
+            subtitle="Real-time audit trail of actions handled by the Guardian."
+            action={
+              <Button asChild size="sm" variant="ghost">
+                <Link to="/app/activity">View All</Link>
+              </Button>
+            }
+          />
+          <div className="ghost-panel divide-y divide-white/5 p-2">
+            {activity.slice(0, 4).map((act) => (
+              <div key={act.id} className="p-3.5 flex items-center justify-between gap-3">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-white truncate">{act.label}</p>
+                  <p className="text-[11px] text-[#8f97b0] truncate mt-0.5">{act.detail || 'Executed autonomously'}</p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <Chip variant={act.published ? 'positive' : 'outline'}>
+                    {act.finalAction}
+                  </Chip>
+                  <span className="text-[10px] text-[#8f97b0]">
+                    {new Date(act.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        </section>
+      </div>
 
-      {/* Content Opportunities */}
-      {opportunities.length > 0 && (
-        <div className="card" style={{ marginTop: 'var(--space-6)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-4)' }}>
-            <Sparkles size={18} style={{ color: 'var(--primary-400)' }} />
-            <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700 }}>Content Opportunities</h3>
+      {/* QUICK WORKSPACE CONTROLS */}
+      <section className="ghost-panel p-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h3 className="font-display text-lg text-white">Guardian Mode Shortcuts</h3>
+            <p className="text-xs text-[#8f97b0]">Switch your response automation level instantly.</p>
           </div>
-          <div className="grid-auto">
-            {opportunities.map((op, i) => (
-              <div key={i} className="card card-glow" style={{ padding: 'var(--space-4)' }}>
-                <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>{op.topic}</h4>
-                <span className="badge badge-primary" style={{ marginBottom: 'var(--space-2)' }}>{op.mentions} mentions · {op.demand} demand</span>
-                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)', lineHeight: 'var(--leading-relaxed)' }}>{op.evidence}</p>
-              </div>
+          <div className="flex flex-wrap gap-2">
+            {['copilot', 'autopilot', 'guardian'].map((m) => (
+              <Button
+                key={m}
+                size="sm"
+                variant={settings.mode === m ? 'default' : 'outline'}
+                onClick={() => updateSettings({ mode: m })}
+                className="capitalize text-xs"
+              >
+                {m === 'copilot' && '🧑‍✈️ '}
+                {m === 'autopilot' && '⚡ '}
+                {m === 'guardian' && '🛡️ '}
+                {m} Mode
+              </Button>
             ))}
           </div>
         </div>
-      )}
-
-      {/* Coming Soon: Creator Assistant */}
-      <div className="card" style={{ marginTop: 'var(--space-6)', borderStyle: 'dashed', opacity: 0.7 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--bg-hover)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Ghost size={20} style={{ color: 'var(--text-muted)' }} />
-          </div>
-          <div>
-            <div style={{ fontSize: 'var(--text-sm)', fontWeight: 700 }}>Coming Soon — Creator AI Assistant</div>
-            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>Episode research, show notes, content ideas, guest research, and more.</div>
-          </div>
-          <span className="badge badge-neutral" style={{ marginLeft: 'auto' }}>Future</span>
-        </div>
-      </div>
-
-      <style>{`
-        @media (max-width: 768px) {
-          .grid-responsive { grid-template-columns: 1fr !important; }
-          .grid-responsive .card { grid-column: span 1 !important; }
-        }
-      `}</style>
+      </section>
     </div>
   );
 }

@@ -1,74 +1,142 @@
 import React, { useState } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { History, Filter, Check, Edit3, X, EyeOff, AlertTriangle, Search } from 'lucide-react';
+import {
+  Activity,
+  Check,
+  Search,
+  Filter,
+  EyeOff,
+  Flag,
+  AlertTriangle,
+} from 'lucide-react';
+import {
+  Chip,
+  EmptyState,
+  SectionTitle,
+} from '../components/guardian/atoms';
+import { useGuardian } from '../lib/store';
 
 export default function ActivityHistory() {
-  const { state } = useApp();
+  const { activity, comments, commenters, videos } = useGuardian();
+  const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
-  const [searchTerm, setSearchTerm] = useState('');
 
-  const actionIcons = { approved: Check, edited: Edit3, rejected: X, ignored: EyeOff, escalated: AlertTriangle };
-  const actionColors = { approved: 'var(--emerald-400)', edited: 'var(--amber-400)', rejected: 'var(--rose-400)', ignored: 'var(--text-muted)', escalated: 'var(--orange-500)' };
+  const filtered = activity.filter((entry) => {
+    if (filter === 'published' && !entry.published) return false;
+    if (filter === 'escalated' && entry.finalAction !== 'escalated') return false;
+    if (filter === 'rejected' && entry.finalAction !== 'rejected') return false;
 
-  const filtered = state.activity.filter(a => {
-    if (filter !== 'all' && a.action !== filter) return false;
-    if (searchTerm && !JSON.stringify(a).toLowerCase().includes(searchTerm.toLowerCase())) return false;
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const comment = comments.find((c) => c.id === entry.commentId);
+      const person = commenters.find((p) => p.id === comment?.commenterId);
+      const labelMatch = entry.label.toLowerCase().includes(q);
+      const detailMatch = (entry.detail || '').toLowerCase().includes(q);
+      const commentMatch = (comment?.text || '').toLowerCase().includes(q);
+      const nameMatch = (person?.displayName || '').toLowerCase().includes(q);
+      if (!labelMatch && !detailMatch && !commentMatch && !nameMatch) return false;
+    }
     return true;
   });
 
-  const formatTime = (ts) => {
-    const d = new Date(ts);
-    return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  };
-
   return (
-    <div className="page-content" style={{ maxWidth: 800 }}>
-      <h1 className="page-title">Activity History</h1>
-      <p className="page-subtitle">{state.activity.length} actions recorded</p>
+    <div className="space-y-6 animate-in fade-in duration-300">
+      <SectionTitle
+        title="Guardian Activity & Audit Trail"
+        subtitle="A complete, transparent log: every comment analyzed, AI recommendation generated, creator decision made, and published outcome."
+      />
 
-      <div className="filter-bar">
-        <div className="search-input">
-          <Search size={16} style={{ color: 'var(--text-muted)' }} />
-          <input placeholder="Search activity..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+      {/* Filter & Search Bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap gap-1.5">
+          {[
+            { id: 'all', label: `All Actions (${activity.length})` },
+            { id: 'published', label: 'Published Only' },
+            { id: 'escalated', label: 'Escalations' },
+            { id: 'rejected', label: 'Rejected' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setFilter(t.id)}
+              className={`rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
+                filter === t.id
+                  ? 'bg-[#4de1dc] text-[#091a1a]'
+                  : 'bg-[#1e2235] text-[#8f97b0] hover:text-white'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
         </div>
-        <select className="select input-sm" value={filter} onChange={e => setFilter(e.target.value)}>
-          <option value="all">All Actions</option>
-          <option value="approved">Approved</option>
-          <option value="edited">Edited</option>
-          <option value="rejected">Rejected</option>
-          <option value="ignored">Ignored</option>
-          <option value="escalated">Escalated</option>
-        </select>
+
+        <div className="relative min-w-[240px]">
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8f97b0]" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search audit trail..."
+            className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/80 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/60 focus:border-[#4de1dc] focus:outline-none"
+          />
+        </div>
       </div>
 
-      {filtered.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-          {filtered.map(entry => {
-            const Icon = actionIcons[entry.action] || History;
-            const color = actionColors[entry.action] || 'var(--text-tertiary)';
+      {/* Activity Log List */}
+      {filtered.length === 0 ? (
+        <EmptyState>
+          Nothing logged yet matching your filter. Moderate or approve comments in the Inbox and events will appear here in real-time.
+        </EmptyState>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((entry) => {
+            const comment = comments.find((c) => c.id === entry.commentId);
+            const person = commenters.find((p) => p.id === comment?.commenterId);
+            const video = videos.find((v) => v.id === comment?.videoId);
+
             return (
-              <div key={entry.id} className="card" style={{ padding: 'var(--space-4)', display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: color + '15', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color }}>
-                  <Icon size={14} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-1)' }}>
-                    <span className="badge" style={{ background: color + '20', color, textTransform: 'capitalize' }}>{entry.action}</span>
-                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>{formatTime(entry.timestamp)}</span>
-                    {entry.platform && <span className="badge badge-neutral">{entry.platform}</span>}
+              <div key={entry.id} className="ghost-panel p-5 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-[#8f97b0]">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-mono">{new Date(entry.timestamp).toLocaleString()}</span>
+                    <Chip variant="outline">YouTube</Chip>
+                    {video && (
+                      <span className="text-white font-medium truncate max-w-xs">
+                        · on "{video.title}"
+                      </span>
+                    )}
                   </div>
-                  {entry.comment && <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', marginBottom: 'var(--space-1)' }} className="truncate">Comment: "{entry.comment}"</p>}
-                  {entry.response && <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-tertiary)' }} className="truncate">Response: "{entry.response}"</p>}
+
+                  <div className="flex items-center gap-2">
+                    <Chip variant={entry.finalAction === 'escalated' ? 'critical' : 'muted'}>
+                      {entry.finalAction}
+                    </Chip>
+                    <Chip variant={entry.published ? 'positive' : 'outline'}>
+                      {entry.published ? 'Published to YouTube' : 'Not Published'}
+                    </Chip>
+                  </div>
                 </div>
+
+                <h4 className="text-sm font-semibold text-white">{entry.label}</h4>
+
+                {comment && (
+                  <div className="rounded-xl border border-white/5 bg-[#0d0f17]/50 p-3 space-y-1 text-xs">
+                    <p className="text-[#8f97b0]">
+                      <strong className="text-white">{person?.displayName || 'User'}</strong> ({person?.handle}) ·{' '}
+                      <span className="text-[#4de1dc]">{comment.classification.replace(/_/g, ' ')}</span> ·{' '}
+                      <span>{comment.risk} risk</span> ·{' '}
+                      <span>{Math.round(comment.confidence * 100)}% match</span>
+                    </p>
+                    <p className="text-white italic">"{comment.text}"</p>
+                  </div>
+                )}
+
+                {entry.detail && (
+                  <p className="text-xs text-[#8f97b0] rounded-lg bg-white/5 p-2.5">
+                    <strong>Decision Detail:</strong> {entry.detail}
+                  </p>
+                )}
               </div>
             );
           })}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-state-icon"><History size={28} /></div>
-          <div className="empty-state-title">{state.activity.length === 0 ? 'No activity yet' : 'No matching activity'}</div>
-          <div className="empty-state-text">{state.activity.length === 0 ? 'Activity will appear here as you interact with comments.' : 'Try adjusting your filters.'}</div>
         </div>
       )}
     </div>

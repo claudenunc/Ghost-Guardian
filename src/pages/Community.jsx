@@ -1,96 +1,162 @@
 import React, { useState } from 'react';
-import { useApp } from '../contexts/AppContext';
-import { Users, Star, Heart, MessageSquare, TrendingUp, Award } from 'lucide-react';
+import {
+  Users,
+  Star,
+  Heart,
+  TrendingUp,
+  Award,
+  MessageSquare,
+  Sparkles,
+} from 'lucide-react';
+import {
+  Chip,
+  EmptyState,
+  SectionTitle,
+  StatBlock,
+} from '../components/guardian/atoms';
+import { useGuardian } from '../lib/store';
 
 export default function Community() {
-  const { state } = useApp();
-  const [activeTab, setActiveTab] = useState('frequent');
-  const members = Object.values(state.communityMembers);
+  const { commenters, comments } = useGuardian();
+  const [tab, setTab] = useState('all');
 
-  const frequent = members.filter(m => m.comments >= 20).sort((a, b) => b.comments - a.comments);
-  const returning = members.filter(m => m.category === 'returning').sort((a, b) => b.comments - a.comments);
-  const newMembers = members.filter(m => m.category === 'new' && m.sentiment !== 'negative').sort((a, b) => new Date(b.firstSeen) - new Date(a.firstSeen));
-  const thoughtful = members.filter(m => m.tags?.includes('philosophy') || m.tags?.includes('questions') || m.tags?.includes('deep-dives')).sort((a, b) => b.comments - a.comments);
+  const members = [...commenters].filter((m) => {
+    if (tab === 'frequent') return m.episodesParticipated >= 10 || m.interactions >= 20;
+    if (tab === 'returning') return m.tags.includes('Returning member') || m.episodesParticipated >= 5;
+    if (tab === 'thoughtful') return m.tags.some((t) => ['Thoughtful contributor', 'Intelligent skeptic', 'Critical but constructive', 'Builder'].includes(t));
+    if (tab === 'new') return m.tags.includes('New supporter') || m.tags.includes('First-time commenter') || m.episodesParticipated === 1;
+    return true;
+  });
 
-  const tabs = [
-    { id: 'frequent', label: 'Frequent Contributors', icon: TrendingUp, data: frequent },
-    { id: 'returning', label: 'Returning Members', icon: Heart, data: returning },
-    { id: 'thoughtful', label: 'Thoughtful Contributors', icon: Star, data: thoughtful },
-    { id: 'new', label: 'New Supporters', icon: Award, data: newMembers },
-  ];
-
-  const currentTab = tabs.find(t => t.id === activeTab);
-  const currentMembers = currentTab?.data || [];
-
-  const sentimentColors = { positive: 'var(--emerald-400)', mixed: 'var(--amber-400)', negative: 'var(--rose-400)', neutral: 'var(--text-tertiary)' };
-  const avatarGradients = [
-    'linear-gradient(135deg, #6366f1, #8b5cf6)',
-    'linear-gradient(135deg, #10b981, #34d399)',
-    'linear-gradient(135deg, #f59e0b, #fbbf24)',
-    'linear-gradient(135deg, #f43f5e, #fb7185)',
-    'linear-gradient(135deg, #0ea5e9, #38bdf8)',
-    'linear-gradient(135deg, #a855f7, #c084fc)',
-  ];
+  const frequentCount = commenters.filter((m) => m.episodesParticipated >= 10 || m.interactions >= 20).length;
+  const returningCount = commenters.filter((m) => m.tags.includes('Returning member') || m.episodesParticipated >= 5).length;
+  const thoughtfulCount = commenters.filter((m) => m.tags.some((t) => ['Thoughtful contributor', 'Intelligent skeptic', 'Critical but constructive', 'Builder'].includes(t))).length;
 
   return (
-    <div className="page-content" style={{ maxWidth: 800 }}>
-      <h1 className="page-title">Community</h1>
-      <p className="page-subtitle">Recognize the people who consistently contribute to your community.</p>
+    <div className="space-y-8 animate-in fade-in duration-300">
+      <SectionTitle
+        title="Community Roster & VIP Supporters"
+        subtitle="Recognize the people who consistently show up, ask thoughtful questions, and shape your show."
+      />
 
-      <div className="tabs" style={{ marginBottom: 'var(--space-6)' }}>
-        {tabs.map(t => (
-          <button key={t.id} className={`tab ${activeTab === t.id ? 'active' : ''}`} onClick={() => setActiveTab(t.id)}>
-            <t.icon size={14} /> {t.label}
-          </button>
-        ))}
+      {/* STATS OVERVIEW */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatBlock
+          label="Tracked Community Members"
+          value={commenters.length}
+          tone="positive"
+          hint="Recurring & engaged voices"
+        />
+        <StatBlock
+          label="Frequent Contributors"
+          value={frequentCount}
+          tone="positive"
+          hint="10+ episodes participated"
+        />
+        <StatBlock
+          label="Returning Members"
+          value={returningCount}
+          hint="Long-term show loyalty"
+        />
+        <StatBlock
+          label="Thoughtful Skeptics"
+          value={thoughtfulCount}
+          tone="attention"
+          hint="Deep intellectual engagement"
+        />
       </div>
 
-      {currentMembers.length > 0 ? (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-          {currentMembers.map((m, i) => (
-            <div key={m.handle} className="card member-card">
-              <div className="member-avatar" style={{ background: avatarGradients[i % avatarGradients.length] }}>
-                {m.name?.[0]?.toUpperCase() || '?'}
-              </div>
-              <div className="member-info">
-                <div className="member-name">{m.name}</div>
-                <div className="member-stats">
-                  {m.comments} comments · Since {new Date(m.firstSeen).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}
-                </div>
-                {m.tags?.length > 0 && (
-                  <div style={{ display: 'flex', gap: 'var(--space-1)', marginTop: 'var(--space-1)', flexWrap: 'wrap' }}>
-                    {m.tags.slice(0, 4).map(tag => (
-                      <span key={tag} className="badge badge-neutral" style={{ fontSize: '9px' }}>{tag}</span>
+      {/* FILTER TABS */}
+      <div className="flex flex-wrap gap-2 pt-2">
+        {[
+          { id: 'all', label: `All Members (${commenters.length})`, icon: Users },
+          { id: 'frequent', label: `Frequent Contributors (${frequentCount})`, icon: TrendingUp },
+          { id: 'returning', label: `Returning Members (${returningCount})`, icon: Heart },
+          { id: 'thoughtful', label: `Thoughtful Contributors (${thoughtfulCount})`, icon: Star },
+          { id: 'new', label: 'New Supporters', icon: Award },
+        ].map((t) => {
+          const Icon = t.icon;
+          const active = tab === t.id;
+          return (
+            <button
+              key={t.id}
+              onClick={() => setTab(t.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-semibold transition-all cursor-pointer ${
+                active
+                  ? 'bg-[#4de1dc] text-[#091a1a] shadow-sm'
+                  : 'bg-[#1e2235] text-[#8f97b0] hover:text-white hover:bg-[#262b42]'
+              }`}
+            >
+              <Icon size={14} />
+              <span>{t.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* COMMUNITY CARDS GRID (EXACT LOVABLE SPEC) */}
+      {members.length === 0 ? (
+        <EmptyState>No community members found in this category.</EmptyState>
+      ) : (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {members.map((m) => {
+            const memberComments = comments.filter((c) => c.commenterId === m.id);
+            return (
+              <div key={m.id} className="ghost-panel p-5 flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h4 className="font-display text-base font-bold text-white">{m.displayName}</h4>
+                      <p className="text-xs font-mono text-[#8f97b0]">{m.handle}</p>
+                    </div>
+                    <div className="size-8 rounded-xl bg-[#4de1dc]/15 text-[#4de1dc] flex items-center justify-center font-bold text-xs shrink-0">
+                      {m.displayName?.[0] || '?'}
+                    </div>
+                  </div>
+
+                  <p className="mt-2 text-xs text-[#8f97b0] font-medium">
+                    {m.episodesParticipated} episodes · {m.interactions} interactions
+                  </p>
+
+                  <div className="mt-3 flex flex-wrap gap-1.5">
+                    {m.tags.map((tag) => (
+                      <Chip
+                        key={tag}
+                        variant={
+                          tag === 'Returning member'
+                            ? 'guardian'
+                            : tag === 'Thoughtful contributor' || tag === 'Intelligent skeptic'
+                            ? 'positive'
+                            : tag === 'Spam pattern' || tag === 'Threat actor'
+                            ? 'critical'
+                            : 'outline'
+                        }
+                      >
+                        {tag}
+                      </Chip>
                     ))}
+                  </div>
+
+                  {m.note && (
+                    <div className="mt-3 rounded-xl border border-white/5 bg-[#0d0f17]/50 p-3">
+                      <p className="text-xs text-[#e4e7f1] leading-relaxed">
+                        📌 {m.note}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {memberComments.length > 0 && (
+                  <div className="pt-3 border-t border-white/5 text-[11px] text-[#8f97b0]">
+                    <span className="font-semibold text-white">Recent comment:</span>
+                    <p className="mt-1 italic line-clamp-2">"{memberComments[0].text}"</p>
                   </div>
                 )}
               </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                <span className="badge" style={{ background: (sentimentColors[m.sentiment] || 'var(--text-tertiary)') + '15', color: sentimentColors[m.sentiment] || 'var(--text-tertiary)' }}>
-                  {m.sentiment}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="empty-state">
-          <div className="empty-state-icon"><Users size={28} /></div>
-          <div className="empty-state-title">No members in this category yet</div>
-          <div className="empty-state-text">Community members will appear as more comments are processed.</div>
+            );
+          })}
         </div>
       )}
-
-      {/* Community Stats Summary */}
-      <div className="card" style={{ marginTop: 'var(--space-6)' }}>
-        <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-4)' }}>Community Overview</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 'var(--space-4)' }}>
-          <div><div className="stat-value" style={{ color: 'var(--primary-400)' }}>{members.length}</div><div className="stat-label">Total Members</div></div>
-          <div><div className="stat-value" style={{ color: 'var(--emerald-400)' }}>{frequent.length}</div><div className="stat-label">Frequent</div></div>
-          <div><div className="stat-value" style={{ color: 'var(--amber-400)' }}>{returning.length}</div><div className="stat-label">Returning</div></div>
-          <div><div className="stat-value" style={{ color: 'var(--sky-400)' }}>{newMembers.length}</div><div className="stat-label">New</div></div>
-        </div>
-      </div>
     </div>
   );
 }

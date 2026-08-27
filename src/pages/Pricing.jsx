@@ -1,111 +1,168 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Check, Ghost, ArrowRight, Zap, Shield, Crown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Check, ArrowRight, Shield, Crown } from 'lucide-react';
+import { GhostMark, Chip, Button } from '../components/guardian/atoms';
 
 const plans = [
   {
     name: 'Free',
-    price: 0,
-    period: '',
-    desc: 'Explore Ghost Guardian with limited features.',
-    features: ['50 comments/month', 'Demo mode access', 'Basic classification', 'Manual approval only'],
-    cta: 'Get Started',
+    price: '$0',
+    period: '/forever',
+    desc: 'Demo mode and limited comment processing.',
+    features: ['50 comments/month', 'Demo workspace access', 'Heuristic risk classifier', 'Manual approval only', 'Community tracking'],
+    cta: 'Explore Free',
     featured: false,
   },
   {
     name: 'Creator',
-    price: 29,
+    price: '$29',
     period: '/mo',
-    desc: 'For individual active creators.',
-    features: ['2,000 comments/month', 'Full AI classification', 'Voice training', 'Copilot + Autopilot modes', 'Audience Intelligence', 'Analytics dashboard', '1 platform connection', 'Email support'],
-    cta: 'Start Creating',
-    featured: false,
-  },
-  {
-    name: 'Pro',
-    price: 79,
-    period: '/mo',
-    desc: 'For high-volume creators and growing channels.',
-    features: ['Unlimited comments', 'Advanced AI responses', 'Guardian Wit', 'All operating modes', 'Full Audience Intelligence', 'Advanced analytics + reports', 'Multiple platforms', 'Community tracking', 'Priority support'],
-    cta: 'Go Pro',
+    desc: 'For individual active creators with an active comment section.',
+    features: [
+      '2,000 comments/month',
+      'Full AI classification & intent detection',
+      'Voice profile calibration & 4 tone registers',
+      'Copilot + Autopilot operating modes',
+      'Audience Intelligence & Question Clustering',
+      'Analytics dashboard & time saved tracker',
+      '1 platform connection (YouTube)',
+      'Direct email support',
+    ],
+    cta: 'Start Creator Plan',
     featured: true,
   },
   {
+    name: 'Pro',
+    price: '$89',
+    period: '/mo',
+    desc: 'For high-volume creators, multiple channels, and weekly reports.',
+    features: [
+      'Unlimited comments',
+      'Guardian Wit hostility de-escalation',
+      'All 3 operating modes including Guardian Shield',
+      'Ghost Guardian Weekly auto-generated digest',
+      'Multi-channel monitoring',
+      'Advanced Content Opportunity detection',
+      'VIP community roster tagging',
+      'Priority response SLA',
+    ],
+    cta: 'Go Pro',
+    featured: false,
+  },
+  {
     name: 'Custom Guardian',
-    price: null,
+    price: 'Custom',
     period: '',
-    desc: 'For major creators, podcasts, and media companies.',
-    features: ['Everything in Pro', 'Custom AI voice training', 'Dedicated onboarding', 'Custom integrations', 'Team access', 'SLA guarantee', 'Personal account manager', 'We\'ll build your Guardian around you'],
-    cta: 'Contact Us',
+    desc: 'For podcasts, media companies, agencies, and creator networks.',
+    features: [
+      'Everything in Pro',
+      'Custom LLM fine-tuning on full show transcripts',
+      'Dedicated onboarding & safety boundary architect',
+      'Custom webhook integrations',
+      'Multi-creator team access',
+      'Dedicated Slack/Discord channel',
+      'SLA guarantee',
+    ],
+    cta: 'Talk to Us',
     featured: false,
   },
 ];
 
 export default function Pricing() {
-  const navigate = useNavigate();
-
   return (
-    <div style={{ background: 'var(--bg-void)', minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav style={{ padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-subtle)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', cursor: 'pointer' }} onClick={() => navigate('/')}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary-600), var(--primary-400))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Ghost size={18} color="white" />
-          </div>
-          <span style={{ fontWeight: 700 }}>Ghost Guardian</span>
-        </div>
-        <button onClick={() => navigate('/auth')} className="btn btn-primary btn-sm">Get Started</button>
-      </nav>
+    <div className="min-h-screen ghost-aurora text-[#f4f6fb]">
+      {/* Header Nav */}
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
+        <Link to="/" className="flex items-center gap-3 group">
+          <GhostMark className="transition-transform group-hover:scale-105" />
+          <span className="font-display text-sm tracking-[0.2em] uppercase text-white font-bold">
+            Ghost Guardian
+          </span>
+        </Link>
+        <Button asChild size="sm">
+          <Link to="/app">Launch App</Link>
+        </Button>
+      </header>
 
-      <div style={{ padding: 'var(--space-16) var(--space-6)', maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ textAlign: 'center', marginBottom: 'var(--space-12)' }}>
-          <h1 style={{ fontSize: 'var(--text-4xl)', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 'var(--space-4)' }}>
-            Simple, Transparent Pricing
+      {/* Pricing Section */}
+      <section className="mx-auto max-w-6xl px-5 pt-10 pb-20 sm:pt-16">
+        <div className="text-center max-w-2xl mx-auto space-y-4">
+          <Chip variant="guardian">Simple, Transparent Plans</Chip>
+          <h1 className="font-display text-4xl sm:text-6xl text-white font-bold">
+            Protect your attention. <br />
+            <span className="text-gradient-guardian">Stay connected.</span>
           </h1>
-          <p style={{ fontSize: 'var(--text-lg)', color: 'var(--text-secondary)', maxWidth: 500, margin: '0 auto' }}>
-            Choose the plan that fits your audience. Upgrade, downgrade, or cancel anytime.
+          <p className="text-sm sm:text-base text-[#8f97b0] leading-relaxed">
+            Choose the level of automation and protection that matches your channel's scale.
           </p>
         </div>
 
-        <div className="pricing-grid">
-          {plans.map(plan => (
-            <div key={plan.name} className={`card pricing-card ${plan.featured ? 'featured' : ''}`}>
-              <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 700 }}>{plan.name}</h3>
-              <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)', marginBottom: 'var(--space-2)' }}>{plan.desc}</p>
-              <div className="pricing-amount">
-                {plan.price !== null ? (
-                  <>${plan.price}<span>{plan.period}</span></>
-                ) : (
-                  <span style={{ fontSize: 'var(--text-2xl)' }}>Custom</span>
-                )}
+        {/* Pricing Cards Grid */}
+        <div className="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {plans.map((plan) => (
+            <div
+              key={plan.name}
+              className={`ghost-panel p-6 flex flex-col justify-between space-y-6 ${
+                plan.featured ? 'border-[#4de1dc] ghost-glow' : ''
+              }`}
+            >
+              <div>
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-lg text-white font-bold">{plan.name}</h3>
+                  {plan.featured && <Chip variant="guardian">Popular</Chip>}
+                </div>
+                <p className="mt-1 text-xs text-[#8f97b0] leading-relaxed min-h-[36px]">{plan.desc}</p>
+
+                <div className="mt-4 flex items-baseline gap-1">
+                  <span className="font-display text-3xl sm:text-4xl text-white font-bold">{plan.price}</span>
+                  <span className="text-xs text-[#8f97b0]">{plan.period}</span>
+                </div>
+
+                <div className="mt-6 space-y-2.5 pt-4 border-t border-white/10 text-xs text-[#e4e7f1]">
+                  {plan.features.map((f, i) => (
+                    <div key={i} className="flex items-start gap-2">
+                      <Check size={14} className="text-[#34d399] shrink-0 mt-0.5" />
+                      <span className="leading-snug">{f}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-              <div className="pricing-features">
-                {plan.features.map((f, i) => (
-                  <div key={i} className="pricing-feature">
-                    <Check size={16} className="check" /> {f}
-                  </div>
-                ))}
-              </div>
-              <button onClick={() => navigate('/auth')} className={`btn ${plan.featured ? 'btn-primary' : 'btn-secondary'} btn-lg`} style={{ width: '100%' }}>
-                {plan.cta} <ArrowRight size={16} />
-              </button>
+
+              <Button
+                asChild
+                size="md"
+                variant={plan.featured ? 'default' : 'secondary'}
+                className="w-full justify-center"
+              >
+                <Link to="/app" className="gap-2">
+                  {plan.cta} <ArrowRight size={14} />
+                </Link>
+              </Button>
             </div>
           ))}
         </div>
 
-        {/* Custom Guardian CTA */}
-        <div className="card card-glow" style={{ marginTop: 'var(--space-12)', textAlign: 'center', padding: 'var(--space-10)' }}>
-          <Crown size={32} style={{ color: 'var(--amber-400)', margin: '0 auto var(--space-4)' }} />
-          <h3 style={{ fontSize: 'var(--text-2xl)', fontWeight: 800, marginBottom: 'var(--space-3)' }}>
-            We'll Build Your Guardian Around You
-          </h3>
-          <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-secondary)', maxWidth: 560, margin: '0 auto var(--space-6)' }}>
-            For larger creators and media companies, Ghost Guardian becomes a customized AI assistant
-            trained on your approved content, transcripts, voice, and workflows.
-          </p>
-          <span className="badge badge-primary badge-lg">Coming Soon — Custom Creator Guardians</span>
+        {/* Custom Guardian Enterprise Callout */}
+        <div className="mt-16 ghost-panel p-8 sm:p-12 flex flex-col sm:flex-row items-center justify-between gap-6 border-white/15">
+          <div className="space-y-2 max-w-xl">
+            <div className="flex items-center gap-2 text-[#fbbf24]">
+              <Crown size={20} />
+              <h3 className="font-display text-xl text-white font-bold">We Build Custom Guardians for Creator Teams</h3>
+            </div>
+            <p className="text-xs sm:text-sm text-[#8f97b0] leading-relaxed">
+              For major podcasts, production studios, and creator collectives with high-volume comment sections, we build customized AI assistants trained on your full catalogue of transcripts and private guidelines.
+            </p>
+          </div>
+          <Button asChild size="lg">
+            <Link to="/app/settings">Inquire About Custom Guardian</Link>
+          </Button>
         </div>
-      </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/10 px-5 py-8 text-center text-xs text-[#8f97b0]">
+        Ghost Guardian © 2026. All rights reserved.
+      </footer>
     </div>
   );
 }

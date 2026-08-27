@@ -1,293 +1,210 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Shield, MessageCircle, Brain, Heart, AlertTriangle, Zap, Eye, Ghost, ArrowRight, Check, Sparkles, Lock, Users, ChevronRight, Star, TrendingUp, MessageSquare, Mic } from 'lucide-react';
+import React from 'react';
+import { Link } from 'react-router-dom';
+import {
+  Shield,
+  HeartHandshake,
+  MessageSquare,
+  Brain,
+  Scale,
+  Ear,
+  AlertTriangle,
+  ArrowRight,
+  Sparkles,
+  Eye,
+  Lock,
+} from 'lucide-react';
+import { GhostMark, Chip, Button } from '../components/guardian/atoms';
+import { demoQuestionClusters } from '../lib/demo-data';
 
 const commentTypes = [
-  { type: 'Praise', color: 'var(--emerald-400)', comment: '"I\'ve followed this show for three years and this episode completely changed how I think."', response: '"Three years! That\'s awesome. Hearing that this shifted something means a lot. What part hit you the hardest?"', icon: Heart },
-  { type: 'Question', color: 'var(--sky-400)', comment: '"Can you explain what you meant around the 42-minute mark?"', response: '"Good question. Around that mark, the discussion was about substrate independence — whether consciousness requires biology or can exist in any sufficiently complex system."', icon: MessageCircle },
-  { type: 'Criticism', color: 'var(--amber-400)', comment: '"I usually love the show, but I think you oversimplified this."', response: '"That\'s fair criticism. What part do you think got oversimplified? That\'s a much more useful conversation."', icon: Star },
-  { type: 'Trolling', color: 'var(--orange-400)', comment: '"This is the dumbest shit I\'ve ever watched."', response: '"You may be right that it\'s not for you. But if you can turn the frustration into an actual argument, we\'re listening."', icon: Zap },
-  { type: 'Threat', color: 'var(--rose-400)', comment: '"Someone should find where you live."', response: '⚠️ HUMAN ATTENTION REQUIRED — Escalated to creator immediately. Comment flagged, evidence preserved.', icon: AlertTriangle },
+  { label: 'Praise', body: 'Acknowledged personally, in your voice, at the right length.', icon: HeartHandshake },
+  { label: 'Questions', body: 'Answered from your transcripts, FAQs and approved knowledge.', icon: MessageSquare },
+  { label: 'Disagreement', body: 'Engaged on the actual argument instead of deflected.', icon: Brain },
+  { label: 'Criticism', body: 'Treated as feedback, never auto-labelled as abuse.', icon: Scale },
+  { label: 'Trolling', body: 'De-escalated with wit, or left alone when silence is smarter.', icon: Ear },
+  { label: 'Harassment', body: 'Boundary set, hidden, logged — without becoming the troll.', icon: Shield },
+  { label: 'Threats', body: 'Never auto-answered. Escalated to you immediately.', icon: AlertTriangle },
 ];
 
 export default function Landing() {
-  const navigate = useNavigate();
-  const [visibleSections, setVisibleSections] = useState(new Set());
-  const [activeComment, setActiveComment] = useState(0);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            setVisibleSections(prev => new Set([...prev, entry.target.id]));
-          }
-        });
-      },
-      { threshold: 0.15 }
-    );
-
-    document.querySelectorAll('[data-animate]').forEach(el => observer.observe(el));
-    return () => observer.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActiveComment(prev => (prev + 1) % commentTypes.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const isVisible = (id) => visibleSections.has(id);
-
   return (
-    <div style={{ background: 'var(--bg-void)', minHeight: '100vh' }}>
-      {/* Nav */}
-      <nav style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, padding: 'var(--space-4) var(--space-6)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(6, 6, 11, 0.8)', backdropFilter: 'blur(12px)', borderBottom: '1px solid var(--border-subtle)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg, var(--primary-600), var(--primary-400))', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Ghost size={18} color="white" />
-          </div>
-          <span style={{ fontWeight: 700, fontSize: 'var(--text-base)' }}>Ghost Guardian</span>
+    <div className="min-h-screen ghost-aurora text-[#f4f6fb]">
+      {/* Top Navbar */}
+      <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
+        <Link to="/" className="flex items-center gap-3 group">
+          <GhostMark className="transition-transform group-hover:scale-105" />
+          <span className="font-display text-sm tracking-[0.2em] uppercase text-white font-bold">
+            Ghost Guardian
+          </span>
+        </Link>
+        <div className="flex items-center gap-3">
+          <Link to="/pricing" className="text-xs font-semibold text-[#8f97b0] hover:text-white transition-colors px-3 py-1.5">
+            Pricing
+          </Link>
+          <Button asChild size="sm">
+            <Link to="/app">Meet your Guardian</Link>
+          </Button>
         </div>
-        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-          <button onClick={() => navigate('/pricing')} className="btn btn-ghost btn-sm">Pricing</button>
-          <button onClick={() => navigate('/auth')} className="btn btn-secondary btn-sm">Sign In</button>
-          <button onClick={() => navigate('/auth?demo=true')} className="btn btn-primary btn-sm">Try Demo</button>
-        </div>
-      </nav>
+      </header>
 
-      {/* Hero */}
-      <section className="hero">
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <div className="animate-fade-in-up" style={{ marginBottom: 'var(--space-4)' }}>
-            <span className="badge badge-primary badge-lg" style={{ marginBottom: 'var(--space-6)', display: 'inline-flex' }}>
-              <Shield size={14} /> AI Community Guardian
-            </span>
-          </div>
-          <h1 className="hero-title animate-fade-in-up delay-1">GHOST GUARDIAN</h1>
-          <p className="hero-tagline animate-fade-in-up delay-2">
-            Your audience is talking. We've got your back.
-          </p>
-          <p className="animate-fade-in-up delay-3" style={{ color: 'var(--text-tertiary)', maxWidth: 520, margin: '0 auto var(--space-8)', fontSize: 'var(--text-base)', lineHeight: 'var(--leading-relaxed)' }}>
-            Ghost Guardian is an AI community guardian for creators who want to stay connected
-            to their audience without giving the internet unlimited access to their time and energy.
-          </p>
-          <div className="hero-cta animate-fade-in-up delay-4">
-            <button onClick={() => navigate('/auth?demo=true')} className="btn btn-primary btn-xl" style={{ gap: 'var(--space-3)' }}>
-              Meet Your Guardian <ArrowRight size={18} />
-            </button>
-            <button onClick={() => {
-              document.getElementById('how-it-works')?.scrollIntoView({ behavior: 'smooth' });
-            }} className="btn btn-secondary btn-xl">
-              See How It Works
-            </button>
-          </div>
+      {/* Hero Section */}
+      <section className="mx-auto max-w-6xl px-5 pt-10 pb-20 sm:pt-20">
+        <Chip variant="guardian" className="gap-1.5">
+          <Sparkles size={13} /> Demo mode included
+        </Chip>
+
+        <h1 className="mt-6 font-display text-4xl leading-[1.08] sm:text-6xl lg:text-7xl text-white font-bold">
+          <span className="text-gradient-guardian">Your audience is talking.</span>
+          <br />
+          We've got your back.
+        </h1>
+
+        <p className="mt-6 max-w-2xl text-base text-[#8f97b0] sm:text-lg leading-relaxed">
+          Ghost Guardian is an AI community guardian for creators who want to stay connected to
+          their audience without giving the internet unlimited access to their time and energy.
+        </p>
+
+        <div className="mt-8 flex flex-wrap gap-3.5">
+          <Button asChild size="lg">
+            <Link to="/app" className="gap-2">
+              Meet Your Guardian <ArrowRight size={16} />
+            </Link>
+          </Button>
+          <Button asChild size="lg" variant="outline">
+            <Link to="/app/inbox">Watch the Demo</Link>
+          </Button>
         </div>
-        <div className="ghost-orb" style={{ top: '20%', left: '10%' }} />
-        <div className="ghost-orb" style={{ bottom: '20%', right: '10%', animationDelay: '1.5s' }} />
+
+        {/* 3 Key Pillars */}
+        <div className="mt-14 grid gap-3 sm:grid-cols-3">
+          {[
+            { k: 'Every comment read', v: "So you don't have to absorb all of them." },
+            { k: 'Nothing published blind', v: 'You approve, edit, or reject each reply.' },
+            { k: 'Threats never auto-answered', v: 'Serious situations go straight to you.' },
+          ].map((item) => (
+            <div key={item.k} className="ghost-panel p-6">
+              <p className="font-display text-sm text-white font-bold">{item.k}</p>
+              <p className="mt-2 text-xs sm:text-sm text-[#8f97b0] leading-relaxed">{item.v}</p>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* The Internet Is Loud */}
-      <section id="loud" data-animate className="landing-section" style={{ textAlign: 'center' }}>
-        <div className={isVisible('loud') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('loud') ? 1 : 0 }}>
-          <h2>THE INTERNET IS LOUD.</h2>
-          <p style={{ margin: '0 auto var(--space-8)' }}>
-            Creators shouldn't have to personally absorb every comment.
-            Not every message deserves the same energy. Not every criticism is abuse.
-            Not every compliment is meaningful. And some things require immediate attention.
-          </p>
-          <p style={{ margin: '0 auto', color: 'var(--text-tertiary)' }}>
-            Ghost Guardian understands the difference.
-          </p>
-        </div>
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <h2 className="font-display text-2xl sm:text-4xl text-white font-bold">The internet is loud.</h2>
+        <p className="mt-4 max-w-2xl text-sm sm:text-base text-[#8f97b0] leading-relaxed">
+          Creators shouldn't have to personally absorb every comment to stay close to the
+          people who show up. Ghost Guardian sits between the noise and your attention — quiet,
+          present, and on your side.
+        </p>
       </section>
 
-      {/* Comment Types Showcase */}
-      <section id="how-it-works" data-animate className="landing-section">
-        <div className={isVisible('how-it-works') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('how-it-works') ? 1 : 0 }}>
-          <div style={{ textAlign: 'center', marginBottom: 'var(--space-12)' }}>
-            <h2>NOT EVERY COMMENT DESERVES<br/>THE SAME RESPONSE.</h2>
-            <p style={{ margin: '0 auto' }}>Ghost Guardian classifies, understands, and responds to each comment with the intelligence it deserves.</p>
-          </div>
-
-          {/* Comment type tabs */}
-          <div style={{ display: 'flex', justifyContent: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', flexWrap: 'wrap' }}>
-            {commentTypes.map((ct, i) => (
-              <button
-                key={ct.type}
-                onClick={() => setActiveComment(i)}
-                className={`btn btn-sm ${activeComment === i ? '' : 'btn-ghost'}`}
-                style={activeComment === i ? { background: ct.color + '20', color: ct.color, border: `1px solid ${ct.color}40` } : {}}
-              >
-                <ct.icon size={14} /> {ct.type}
-              </button>
-            ))}
-          </div>
-
-          {/* Active comment display */}
-          <div className="card card-glass" style={{ maxWidth: 700, margin: '0 auto', padding: 'var(--space-8)' }}>
-            <div style={{ marginBottom: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                <div className="risk-dot" style={{ background: commentTypes[activeComment].color }} />
-                <span className="badge" style={{ background: commentTypes[activeComment].color + '20', color: commentTypes[activeComment].color }}>
-                  {commentTypes[activeComment].type}
-                </span>
+      {/* Not Every Comment Deserves The Same Response */}
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <h2 className="font-display text-2xl sm:text-4xl text-white font-bold">
+          Not every comment deserves the same response.
+        </h2>
+        <p className="mt-2 text-xs sm:text-sm text-[#8f97b0]">Ghost Guardian classifies, understands intent, and applies the right response posture.</p>
+        <div className="mt-8 grid gap-3.5 sm:grid-cols-2 lg:grid-cols-3">
+          {commentTypes.map(({ label, body, icon: Icon }) => (
+            <div key={label} className="ghost-panel p-5 sm:p-6 space-y-3">
+              <div className="size-10 rounded-xl bg-[#1e2235] text-[#4de1dc] flex items-center justify-center">
+                <Icon size={20} strokeWidth={1.8} />
               </div>
-              <p style={{ fontSize: 'var(--text-lg)', fontStyle: 'italic', color: 'var(--text-secondary)', lineHeight: 'var(--leading-relaxed)' }}>
-                {commentTypes[activeComment].comment}
-              </p>
+              <p className="font-display text-base text-white font-bold">{label}</p>
+              <p className="text-xs sm:text-sm text-[#8f97b0] leading-relaxed">{body}</p>
             </div>
-            <div style={{ borderTop: '1px solid var(--border-subtle)', paddingTop: 'var(--space-4)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                <Ghost size={14} style={{ color: 'var(--primary-400)' }} />
-                <span style={{ fontSize: 'var(--text-xs)', fontWeight: 600, color: 'var(--primary-400)' }}>Ghost Guardian Response</span>
-              </div>
-              <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-primary)', lineHeight: 'var(--leading-relaxed)' }}>
-                {commentTypes[activeComment].response}
-              </p>
+          ))}
+        </div>
+      </section>
+
+      {/* Your Voice & Defend Without Becoming Troll */}
+      <section className="mx-auto grid max-w-6xl gap-6 px-5 py-16 lg:grid-cols-2">
+        <div className="ghost-panel p-8 space-y-3">
+          <h2 className="font-display text-2xl text-white font-bold">Your voice. Your rules.</h2>
+          <p className="text-sm text-[#8f97b0] leading-relaxed">
+            Ghost Guardian never claims to be you. It generates responses consistent with the
+            communication style you approve — your vocabulary, your length, your humour, your
+            boundaries. Subjects you never want discussed simply aren't.
+          </p>
+        </div>
+        <div className="ghost-panel p-8 space-y-3">
+          <h2 className="font-display text-2xl text-white font-bold">Defend without becoming the troll.</h2>
+          <p className="text-sm text-[#8f97b0] leading-relaxed">
+            Compassion without submission. Boundaries without cruelty. Humour without humiliation.
+            The goal isn't winning internet arguments — it's the best possible interaction for you
+            and the community who showed up.
+          </p>
+        </div>
+      </section>
+
+      {/* Audience Intelligence Section */}
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <h2 className="font-display text-2xl sm:text-4xl text-white font-bold">
+          Your audience is trying to tell you something.
+        </h2>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">
+          {demoQuestionClusters.map((cluster) => (
+            <div key={cluster.id} className="ghost-panel p-6 space-y-3">
+              <Chip variant="attention">
+                <Sparkles size={12} /> {cluster.mentions} people asked
+              </Chip>
+              <p className="text-sm text-white font-semibold leading-relaxed">"{cluster.question}"</p>
+              <p className="text-xs font-mono text-[#34d399] font-bold">{cluster.trend}</p>
             </div>
-          </div>
+          ))}
         </div>
+        <p className="mt-4 text-xs sm:text-sm text-[#8f97b0]">
+          Recurring questions, emerging topics, content opportunities, and community health — drawn
+          from real comment data, never invented.
+        </p>
       </section>
 
-      {/* Your Voice Your Rules */}
-      <section id="voice" data-animate className="landing-section" style={{ textAlign: 'center' }}>
-        <div className={isVisible('voice') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('voice') ? 1 : 0 }}>
-          <h2>YOUR VOICE. YOUR RULES.</h2>
-          <p style={{ margin: '0 auto var(--space-10)' }}>
-            Ghost Guardian doesn't replace you. It learns how you communicate — your tone, your humor,
-            your boundaries — and generates responses that sound like you wrote them. Because the creator
-            should remain the person people came to hear.
+      {/* You Should Create */}
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <div className="ghost-panel p-8 sm:p-12 space-y-4">
+          <Eye size={28} className="text-[#4de1dc]" strokeWidth={1.8} />
+          <h2 className="font-display text-2xl sm:text-4xl text-white font-bold">You should create.</h2>
+          <p className="max-w-2xl text-sm sm:text-base text-[#8f97b0] leading-relaxed">
+            There are people with something beautiful to give the world who never give it because
+            they're afraid of what strangers will say in the comments. Create Without Fear is where Ghost
+            Guardian is going: helping people publish without handing their nervous system to the
+            comment section.
           </p>
-          <div className="grid-auto" style={{ maxWidth: 800, margin: '0 auto' }}>
-            {[
-              { icon: Mic2, title: 'Voice Training', desc: 'Teach your Guardian how you speak by approving, editing, and saving examples.' },
-              { icon: Shield, title: 'Custom Boundaries', desc: 'Set topics to avoid, subjects requiring approval, and lines that should never be crossed.' },
-              { icon: Sparkles, title: 'Guardian Wit', desc: 'Enable intelligent, composed responses that outclass hostility without becoming hostile.' },
-            ].map(f => (
-              <div key={f.title} className="card" style={{ textAlign: 'left' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-3)', color: 'var(--primary-400)' }}>
-                  <f.icon size={20} />
-                </div>
-                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>{f.title}</h3>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Defend Without Becoming The Troll */}
-      <section id="philosophy" data-animate className="landing-section" style={{ textAlign: 'center' }}>
-        <div className={isVisible('philosophy') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('philosophy') ? 1 : 0 }}>
-          <h2 style={{ background: 'linear-gradient(135deg, var(--primary-300), var(--amber-400))', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-            DEFEND WITHOUT<br/>BECOMING THE TROLL.
-          </h2>
-          <p style={{ margin: '0 auto var(--space-8)' }}>
-            Ghost Guardian doesn't fight. It doesn't insult. It doesn't humiliate.
-            It understands the difference between disagreement and abuse,
-            between criticism and cruelty. And it responds accordingly.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: 'var(--space-3)', maxWidth: 700, margin: '0 auto' }}>
-            {[
-              'Curiosity before judgment',
-              'Connection before correction',
-              'Compassion without submission',
-              'Boundaries without cruelty',
-              'Humor without humiliation',
-              'Intelligence without arrogance',
-              'Silence when silence is wiser',
-            ].map(p => (
-              <span key={p} className="badge badge-neutral badge-lg" style={{ padding: 'var(--space-2) var(--space-4)' }}>{p}</span>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Audience Intelligence */}
-      <section id="intelligence" data-animate className="landing-section" style={{ textAlign: 'center' }}>
-        <div className={isVisible('intelligence') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('intelligence') ? 1 : 0 }}>
-          <h2>YOUR AUDIENCE IS TRYING TO<br/>TELL YOU SOMETHING.</h2>
-          <p style={{ margin: '0 auto var(--space-10)' }}>
-            Ghost Guardian doesn't just respond to comments — it listens to your community.
-            It surfaces patterns, recurring questions, emerging topics, and content opportunities
-            you'd never find reading comments one at a time.
-          </p>
-          <div className="grid-auto" style={{ maxWidth: 900, margin: '0 auto' }}>
-            {[
-              { icon: TrendingUp, title: 'Emerging Topics', desc: 'Discover what subjects are gaining traction before they trend.' },
-              { icon: MessageSquare, title: 'Recurring Questions', desc: '83 people asked variations of the same question. Now you know.' },
-              { icon: Sparkles, title: 'Content Opportunities', desc: 'Your audience is requesting a follow-up episode. Here\'s the data.' },
-              { icon: Users, title: 'Community Health', desc: 'Track constructive discussion vs. hostility. Know your community\'s mood.' },
-            ].map(f => (
-              <div key={f.title} className="card" style={{ textAlign: 'left' }}>
-                <div style={{ width: 40, height: 40, borderRadius: 'var(--radius-md)', background: 'var(--primary-glow)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 'var(--space-3)', color: 'var(--primary-400)' }}>
-                  <f.icon size={20} />
-                </div>
-                <h3 style={{ fontSize: 'var(--text-base)', fontWeight: 700, marginBottom: 'var(--space-2)' }}>{f.title}</h3>
-                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--text-tertiary)' }}>{f.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Create Without Fear */}
-      <section id="create" data-animate className="landing-section" style={{ textAlign: 'center' }}>
-        <div className={isVisible('create') ? 'animate-fade-in-up' : ''} style={{ opacity: isVisible('create') ? 1 : 0 }}>
-          <h2>YOU SHOULD CREATE.</h2>
-          <p style={{ margin: '0 auto var(--space-6)', fontSize: 'var(--text-xl)', color: 'var(--text-secondary)' }}>
-            There are people who have something beautiful to give the world
-            who never give it because they're afraid of what people will say.
-          </p>
-          <p style={{ margin: '0 auto var(--space-8)', color: 'var(--text-tertiary)' }}>
-            Ghost Guardian exists to help change that. Not by hiding the world from creators.
-            Not by attacking critics. But by helping creators distinguish conversation from cruelty,
-            criticism from abuse, and what deserves their energy from what doesn't.
-          </p>
-          <span className="badge badge-primary badge-lg" style={{ padding: 'var(--space-2) var(--space-5)' }}>
-            Create Without Fear — Coming Soon
-          </span>
+          <Chip variant="outline" className="mt-2">
+            Coming soon — Create Without Fear Mode
+          </Chip>
         </div>
       </section>
 
       {/* Final CTA */}
-      <section style={{ padding: 'var(--space-24) var(--space-6)', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
-        <div className="ghost-orb" style={{ top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 400, height: 400, opacity: 0.1 }} />
-        <div style={{ position: 'relative', zIndex: 1 }}>
-          <h2 style={{ fontSize: 'clamp(1.5rem, 5vw, var(--text-4xl))', fontWeight: 900, letterSpacing: '-0.03em', marginBottom: 'var(--space-4)' }}>
-            You create.<br/>
-            <span className="gradient-text">Ghost Guardian has your back.</span>
+      <section className="mx-auto max-w-6xl px-5 pb-24">
+        <div className="ghost-panel ghost-glow p-8 text-center sm:p-16 space-y-6">
+          <h2 className="font-display text-3xl sm:text-5xl text-white font-bold">
+            You create. Ghost Guardian has your back.
           </h2>
-          <p style={{ color: 'var(--text-tertiary)', marginBottom: 'var(--space-8)', maxWidth: 440, margin: '0 auto var(--space-8)' }}>
-            Join the creators who never worry about their comments again.
+          <p className="text-sm text-[#8f97b0] max-w-lg mx-auto">
+            Experience the full AI community guardian with pre-loaded demo episodes, comments, and intelligence.
           </p>
-          <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => navigate('/auth?demo=true')} className="btn btn-primary btn-xl">
-              Meet Your Guardian <ArrowRight size={18} />
-            </button>
-            <button onClick={() => navigate('/pricing')} className="btn btn-secondary btn-xl">
-              View Pricing
-            </button>
+          <div className="flex flex-wrap justify-center gap-3.5">
+            <Button asChild size="lg">
+              <Link to="/app">Meet Your Guardian</Link>
+            </Button>
+            <Button asChild size="lg" variant="outline">
+              <Link to="/app/settings">See Plans & Controls</Link>
+            </Button>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer style={{ borderTop: '1px solid var(--border-subtle)', padding: 'var(--space-8) var(--space-6)', textAlign: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 'var(--space-3)', marginBottom: 'var(--space-4)' }}>
-          <Ghost size={16} style={{ color: 'var(--primary-400)' }} />
-          <span style={{ fontSize: 'var(--text-sm)', fontWeight: 600 }}>Ghost Guardian</span>
+      <footer className="border-t border-white/10 px-5 py-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 text-xs text-[#8f97b0]">
+          <span>Ghost Guardian — an AI community guardian authorised by the creator. Never an impersonation.</span>
+          <span>Demo data only. Live YouTube connection requires OAuth authorization.</span>
         </div>
-        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
-          Defend the creator without becoming the troll. © {new Date().getFullYear()}
-        </p>
       </footer>
     </div>
   );
-}
-
-function Mic2(props) {
-  return <Mic {...props} />;
 }

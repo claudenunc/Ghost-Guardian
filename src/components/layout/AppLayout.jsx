@@ -5,10 +5,10 @@ import {
   Inbox,
   Mic,
   Shield,
+  Lightbulb,
   Users,
   BarChart3,
   Activity,
-  Server,
   Settings,
   Pause,
   Play,
@@ -21,15 +21,14 @@ import { GhostMark, Chip, Button } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
 
 const navItems = [
-  { to: '/app', label: 'Dashboard', icon: LayoutDashboard, end: true },
+  { to: '/app', label: 'Briefing', icon: LayoutDashboard, end: true },
   { to: '/app/inbox', label: 'Inbox', icon: Inbox },
   { to: '/app/voice', label: 'Voice', icon: Mic },
   { to: '/app/rules', label: 'Guardian Rules', icon: Shield },
-  { to: '/app/audience', label: 'Audience', icon: Users },
+  { to: '/app/audience', label: 'Audience', icon: Lightbulb },
   { to: '/app/analytics', label: 'Analytics', icon: BarChart3 },
   { to: '/app/community', label: 'Community', icon: Users },
-  { to: '/app/activity', label: 'Activity', icon: Activity },
-  { to: '/app/system', label: 'Cloud & System', icon: Server },
+  { to: '/app/activity', label: 'Journal', icon: Activity },
   { to: '/app/settings', label: 'Settings', icon: Settings },
 ];
 

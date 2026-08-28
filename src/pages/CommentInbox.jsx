@@ -1,366 +1,245 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
-  AlertTriangle,
-  Check,
-  EyeOff,
-  Flag,
-  Info,
-  RefreshCw,
   Search,
-  ShieldAlert,
+  Filter,
+  SlidersHorizontal,
+  CheckCheck,
+  RotateCcw,
   Sparkles,
-  X,
-  MessageSquare,
-  ChevronDown,
-  ChevronUp,
+  Shield,
 } from 'lucide-react';
-import {
-  ActionChip,
-  Button,
-  Chip,
-  ClassificationChip,
-  EmptyState,
-  RiskChip,
-  SectionTitle,
-  StrategyChip,
-  Textarea,
-} from '../components/guardian/atoms';
+import { Button, EmptyState, SectionTitle } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
+import InboxPulse from '../components/comments/InboxPulse';
+import InboxLanes from '../components/comments/InboxLanes';
+import CommentCard from '../components/comments/CommentCard';
+import {
+  getCommentPriority,
+  isHandled,
+  isHumanMoment,
+  isNeedsYou,
+  isReviewQueue,
+  isShieldVault,
+} from '../components/comments/CommentPriority';
 
-const tones = ['calm', 'direct', 'warm', 'humorous'];
+const categoryFilters = [
+  { id: 'all', label: 'All Categories' },
+  { id: 'questions', label: 'Questions' },
+  { id: 'criticism', label: 'Constructive Criticism' },
+  { id: 'disagreement', label: 'Disagreements' },
+  { id: 'praise', label: 'Praise & Support' },
+  { id: 'humor', label: 'Humor' },
+  { id: 'hostile', label: 'Hostile & Harassment' },
+  { id: 'spam', label: 'Spam & Scams' },
+];
 
 export default function CommentInbox() {
-  const { comments, commenters, videos, stateFor } = useGuardian();
-  const [filter, setFilter] = useState('all');
+  const { comments, commenters, videos, stateFor, approve, showToast } = useGuardian();
+
+  const [activeLane, setActiveLane] = useState('needs_you');
+  const [categoryFilter, setCategoryFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const filtered = comments.filter((c) => {
-    const s = stateFor(c.id);
-    if (filter === 'pending' && s.status !== 'pending') return false;
-    if (filter === 'approved' && s.status !== 'approved' && s.status !== 'edited') return false;
-    if (filter === 'attention' && c.risk !== 'critical' && c.risk !== 'high' && c.recommendedAction !== 'human_review') return false;
-    if (filter === 'questions' && c.classification !== 'QUESTION') return false;
-    if (filter === 'praise' && c.classification !== 'PRAISE') return false;
-    if (filter === 'criticism' && c.classification !== 'CONSTRUCTIVE_CRITICISM' && c.classification !== 'DISAGREEMENT') return false;
-    if (filter === 'hostile' && !['TROLLING', 'HARASSMENT', 'HATE', 'THREAT'].includes(c.classification)) return false;
+  // 1. Calculate live counts for each lane
+  const laneCounts = useMemo(() => {
+    let needsYou = 0;
+    let reviewQueue = 0;
+    let humanMoments = 0;
+    let shieldVault = 0;
+    let handled = 0;
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const person = commenters.find((p) => p.id === c.commenterId);
-      const textMatch = c.text.toLowerCase().includes(q);
-      const authorMatch = (person?.displayName || '').toLowerCase().includes(q) || (person?.handle || '').toLowerCase().includes(q);
-      const responseMatch = (s.responseText || '').toLowerCase().includes(q);
-      if (!textMatch && !authorMatch && !responseMatch) return false;
-    }
+    comments.forEach((c) => {
+      const s = stateFor(c.id);
+      if (isHandled(s)) handled++;
+      if (isNeedsYou(c, s)) needsYou++;
+      if (isReviewQueue(c, s)) reviewQueue++;
+      if (isHumanMoment(c) && s.status === 'pending') humanMoments++;
+      if (isShieldVault(c) && s.status === 'pending') shieldVault++;
+    });
 
-    return true;
-  });
+    return {
+      needs_you: needsYou,
+      review_queue: reviewQueue,
+      human_moments: humanMoments,
+      shield_vault: shieldVault,
+      handled,
+      all: comments.length,
+    };
+  }, [comments, stateFor]);
 
-  const pendingCount = comments.filter((c) => stateFor(c.id).status === 'pending').length;
-  const attentionCount = comments.filter((c) => (c.risk === 'critical' || c.risk === 'high' || c.recommendedAction === 'human_review') && stateFor(c.id).status === 'pending').length;
+  // 2. Filter comments by active lane, category filter, and search text
+  const filteredComments = useMemo(() => {
+    return comments
+      .filter((c) => {
+        const s = stateFor(c.id);
+
+        // Active lane filtering
+        if (activeLane === 'needs_you' && !isNeedsYou(c, s)) return false;
+        if (activeLane === 'review_queue' && !isReviewQueue(c, s)) return false;
+        if (activeLane === 'human_moments' && (!isHumanMoment(c) || s.status !== 'pending')) return false;
+        if (activeLane === 'shield_vault' && (!isShieldVault(c) || s.status !== 'pending')) return false;
+        if (activeLane === 'handled' && !isHandled(s)) return false;
+
+        // Category filter
+        if (categoryFilter === 'questions' && c.classification !== 'QUESTION') return false;
+        if (categoryFilter === 'criticism' && c.classification !== 'CONSTRUCTIVE_CRITICISM') return false;
+        if (categoryFilter === 'disagreement' && c.classification !== 'DISAGREEMENT') return false;
+        if (categoryFilter === 'praise' && c.classification !== 'PRAISE') return false;
+        if (categoryFilter === 'humor' && c.classification !== 'HUMOR') return false;
+        if (categoryFilter === 'hostile' && !['TROLLING', 'HARASSMENT', 'HATE', 'THREAT'].includes(c.classification)) return false;
+        if (categoryFilter === 'spam' && !['SPAM', 'SCAM'].includes(c.classification)) return false;
+
+        // Search filtering
+        if (search.trim()) {
+          const q = search.toLowerCase();
+          const person = commenters.find((p) => p.id === c.commenterId);
+          const video = videos.find((v) => v.id === c.videoId);
+          const textMatch = (c.text || '').toLowerCase().includes(q);
+          const authorMatch =
+            (person?.displayName || '').toLowerCase().includes(q) ||
+            (person?.handle || '').toLowerCase().includes(q);
+          const videoMatch = (video?.title || '').toLowerCase().includes(q);
+          const responseMatch = (s.responseText || '').toLowerCase().includes(q);
+          if (!textMatch && !authorMatch && !videoMatch && !responseMatch) return false;
+        }
+
+        return true;
+      })
+      // Intelligent prioritization sorting
+      .sort((a, b) => {
+        const priorityA = getCommentPriority(a);
+        const priorityB = getCommentPriority(b);
+        if (priorityA !== priorityB) return priorityA - priorityB;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+  }, [activeLane, categoryFilter, comments, commenters, search, stateFor, videos]);
+
+  // Quick action: approve all ready drafts in review queue
+  const handleApproveAllReady = () => {
+    const readyInReview = filteredComments.filter(
+      (c) => isReviewQueue(c, stateFor(c.id))
+    );
+    readyInReview.forEach((c) => approve(c.id));
+    showToast(`Approved ${readyInReview.length} drafts. Handled!`, 'success');
+  };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-16">
+      {/* Page Title */}
       <SectionTitle
         title="Comment Inbox"
-        subtitle="Review, calibrate, and approve responses. Nothing publishes without your consent in Copilot mode."
+        subtitle="Intelligent triage, human attention calibration, and protective buffering."
       />
 
-      {/* Filter and Search Bar */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-1.5 overflow-x-auto">
-          {[
-            { id: 'all', label: `All (${comments.length})` },
-            { id: 'pending', label: `Pending (${pendingCount})` },
-            { id: 'attention', label: `Needs Attention (${attentionCount})` },
-            { id: 'questions', label: 'Questions' },
-            { id: 'praise', label: 'Praise' },
-            { id: 'criticism', label: 'Criticism' },
-            { id: 'hostile', label: 'Hostile & Threats' },
-            { id: 'approved', label: 'Approved' },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setFilter(tab.id)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                filter === tab.id
-                  ? 'bg-[#4de1dc] text-[#091a1a] shadow-sm'
-                  : 'bg-[#1e2235] text-[#8f97b0] hover:text-white hover:bg-[#262b42]'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* 1. The Pulse: Situation Overview answering the 3 questions */}
+      <InboxPulse
+        needsYouCount={laneCounts.needs_you}
+        handledCount={laneCounts.handled}
+        humanMomentsCount={laneCounts.human_moments}
+        shieldedCount={laneCounts.shield_vault}
+        onSelectLane={(lane) => {
+          setActiveLane(lane);
+          setCategoryFilter('all');
+        }}
+      />
 
-        <div className="relative min-w-[220px]">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8f97b0]" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search comments or users..."
-            className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/80 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/60 focus:border-[#4de1dc] focus:outline-none"
-          />
+      {/* 2. Lanes Segmented Control */}
+      <div className="space-y-3">
+        <InboxLanes
+          activeLane={activeLane}
+          onSelectLane={(lane) => {
+            setActiveLane(lane);
+          }}
+          laneCounts={laneCounts}
+        />
+
+        {/* 3. Search & Sub-category Bar */}
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between pt-1">
+          {/* Sub-category pills */}
+          <div className="flex flex-wrap gap-1.5 overflow-x-auto">
+            {categoryFilters.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                onClick={() => setCategoryFilter(cat.id)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
+                  categoryFilter === cat.id
+                    ? 'bg-[#1e2235] text-[#4de1dc] border border-[#4de1dc]/40'
+                    : 'bg-transparent text-[#8f97b0] hover:text-white hover:bg-white/5 border border-transparent'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Search input & bulk action */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="relative min-w-[220px] w-full sm:w-auto">
+              <Search
+                size={14}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8f97b0]"
+              />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search comments, users, videos..."
+                className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/90 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/50 focus:border-[#4de1dc] focus:outline-none"
+              />
+            </div>
+
+            {activeLane === 'review_queue' && filteredComments.length > 0 && (
+              <Button
+                size="sm"
+                variant="default"
+                onClick={handleApproveAllReady}
+                title="1-click approve all pending drafts in this lane"
+              >
+                <CheckCheck size={14} /> Approve All ({filteredComments.length})
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
-      {/* Comments List */}
-      {filtered.length === 0 ? (
-        <EmptyState>No comments match your search or filter selection.</EmptyState>
+      {/* 4. Filtered Comments List */}
+      {filteredComments.length === 0 ? (
+        <EmptyState>
+          <div className="py-8 space-y-2">
+            <p className="text-base text-white font-semibold">
+              {activeLane === 'needs_you' && '✨ Nothing requires your attention right now.'}
+              {activeLane === 'review_queue' && '✨ All pending drafts in review queue have been resolved.'}
+              {activeLane === 'human_moments' && '🤍 No pending Human Moments in this filter.'}
+              {activeLane === 'shield_vault' && '🛡️ Shield Vault is clear — no unhandled hostile comments.'}
+              {activeLane === 'handled' && 'No resolved comments found for this query.'}
+              {activeLane === 'all' && 'No comments match your search criteria.'}
+            </p>
+            <p className="text-xs text-[#8f97b0]">
+              Switch lanes or reset filters to explore other community conversations.
+            </p>
+            <div className="pt-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  setActiveLane('all');
+                  setCategoryFilter('all');
+                  setSearch('');
+                }}
+              >
+                <RotateCcw size={13} /> View All Comments
+              </Button>
+            </div>
+          </div>
+        </EmptyState>
       ) : (
         <div className="space-y-4">
-          {filtered.map((comment) => (
+          {filteredComments.map((comment) => (
             <CommentCard key={comment.id} comment={comment} />
           ))}
         </div>
       )}
     </div>
-  );
-}
-
-function CommentCard({ comment }) {
-  const guardian = useGuardian();
-  const state = guardian.stateFor(comment.id);
-  const person = guardian.commenters.find((p) => p.id === comment.commenterId);
-  const video = guardian.videos.find((v) => v.id === comment.videoId);
-  const [reasoningOpen, setReasoningOpen] = useState(false);
-
-  const locked = comment.risk === 'critical' || comment.recommendedAction === 'human_review';
-  const hasDraft = Object.values(comment.drafts || {}).some(Boolean);
-
-  const timeString = new Date(comment.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  return (
-    <article className="ghost-panel p-5 sm:p-6 transition-all duration-200">
-      {/* Header Info */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <div className="size-9 rounded-xl bg-[#1e2235] border border-white/10 text-[#4de1dc] flex items-center justify-center font-bold text-xs shrink-0">
-            {person?.displayName?.[0] || '?'}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-bold text-white">{person?.displayName || 'User'}</span>
-              <span className="text-xs text-[#8f97b0]">{person?.handle}</span>
-            </div>
-            <div className="flex items-center gap-2 text-xs text-[#8f97b0] mt-0.5">
-              <span>{timeString}</span>
-              {video && <span className="truncate max-w-[200px] sm:max-w-xs">· on {video.title}</span>}
-              {comment.likes > 0 && <span>· 👍 {comment.likes.toLocaleString()}</span>}
-            </div>
-          </div>
-        </div>
-
-        {/* Chips */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <ClassificationChip value={comment.classification} />
-          <RiskChip risk={comment.risk} />
-          <StrategyChip value={comment.strategy} />
-          <ActionChip value={comment.recommendedAction} />
-          <Chip variant="outline">{Math.round(comment.confidence * 100)}% match</Chip>
-        </div>
-      </div>
-
-      {/* Comment Body */}
-      <p className="mt-4 text-sm sm:text-base text-white leading-relaxed font-normal">
-        "{comment.text}"
-      </p>
-
-      {/* Expandable Reasoning */}
-      <div className="mt-3">
-        <button
-          onClick={() => setReasoningOpen(!reasoningOpen)}
-          className="inline-flex items-center gap-1.5 text-xs text-[#4de1dc] hover:underline cursor-pointer"
-        >
-          <Info size={13} /> Why this recommendation?
-          {reasoningOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
-        </button>
-
-        {reasoningOpen && (
-          <div className="mt-2.5 rounded-xl border border-white/10 bg-[#0d0f17]/70 p-4 text-xs space-y-2">
-            <div>
-              <span className="text-[10px] tracking-widest text-[#8f97b0] uppercase font-semibold">Underlying Intent:</span>
-              <p className="text-white mt-0.5">{comment.intent}</p>
-            </div>
-            <div>
-              <span className="text-[10px] tracking-widest text-[#8f97b0] uppercase font-semibold">Guardian Reasoning:</span>
-              <ul className="mt-1 space-y-1 text-[#8f97b0]">
-                {comment.reasoning?.map((r, i) => (
-                  <li key={i} className="flex items-start gap-1.5">
-                    <span className="text-[#4de1dc]">•</span> {r}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Escalation Alert */}
-      {comment.escalationReason && (
-        <div className="mt-4 rounded-xl border border-[#f87171]/40 bg-[#f87171]/10 p-4 flex items-start gap-3">
-          <ShieldAlert size={18} className="text-[#f87171] shrink-0 mt-0.5" />
-          <div>
-            <p className="text-xs font-bold text-[#f87171] uppercase tracking-wider">Human Attention Required</p>
-            <p className="mt-1 text-xs text-white leading-relaxed">{comment.escalationReason}</p>
-          </div>
-        </div>
-      )}
-
-      {/* Status Badges if Handled */}
-      {state.status !== 'pending' && (
-        <div className="mt-4 flex flex-wrap items-center gap-2 pt-3 border-t border-white/5">
-          <Chip variant={state.status === 'rejected' ? 'outline' : 'positive'}>
-            Status: {state.status}
-          </Chip>
-          {state.savedAsExample && <Chip variant="guardian">✨ Saved as Voice Example</Chip>}
-          <span className="text-xs text-[#8f97b0]">
-            Handled at {new Date(state.updatedAt).toLocaleTimeString()}
-          </span>
-        </div>
-      )}
-
-      {/* Response Drafting & Tone Registers */}
-      {locked ? (
-        <div className="mt-4 flex flex-wrap gap-2 pt-2">
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => {
-              guardian.setStatus(comment.id, 'escalated', 'Escalated to creator — direct human intervention');
-              guardian.showToast('Escalated to creator. Thread locked & logged.', 'warning');
-            }}
-          >
-            <AlertTriangle size={14} /> Escalate to Me
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              guardian.setStatus(comment.id, 'reported', 'Reported to YouTube platform');
-              guardian.showToast('Reported and hidden.', 'success');
-            }}
-          >
-            <Flag size={14} /> Report Abuse
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => {
-              guardian.setStatus(comment.id, 'hidden', 'Hidden from public feed');
-              guardian.showToast('Comment hidden.', 'info');
-            }}
-          >
-            <EyeOff size={14} /> Hide
-          </Button>
-        </div>
-      ) : hasDraft ? (
-        <div className="mt-4 space-y-3 pt-3 border-t border-white/5">
-          {/* Tone Selector */}
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] tracking-widest text-[#8f97b0] uppercase font-bold">Guardian Draft Registers:</span>
-              <div className="flex flex-wrap gap-1">
-                {tones
-                  .filter((t) => comment.drafts?.[t])
-                  .map((tone) => (
-                    <button
-                      key={tone}
-                      onClick={() => guardian.useTone(comment.id, tone)}
-                      className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase transition-colors ${
-                        state.activeTone === tone
-                          ? 'border border-[#4de1dc]/50 bg-[#4de1dc]/20 text-[#4de1dc]'
-                          : 'border border-white/10 text-[#8f97b0] hover:text-white hover:border-white/25'
-                      }`}
-                    >
-                      {tone}
-                    </button>
-                  ))}
-              </div>
-            </div>
-            {state.wasEdited && <Chip variant="attention">Edited by you</Chip>}
-          </div>
-
-          <Textarea
-            value={state.responseText}
-            rows={3}
-            onChange={(e) => guardian.setResponse(comment.id, e.target.value)}
-            placeholder="Edit draft response..."
-          />
-
-          {/* Action Buttons */}
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button
-              size="sm"
-              disabled={state.status === 'approved' || state.status === 'edited'}
-              onClick={() => guardian.approve(comment.id)}
-            >
-              <Check size={14} /> Approve & Publish
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => guardian.regenerate(comment.id)}
-            >
-              <RefreshCw size={14} /> Regenerate
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => guardian.saveAsExample(comment.id)}
-            >
-              <Sparkles size={14} /> Save as Example
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => guardian.reject(comment.id)}
-            >
-              <X size={14} /> Reject
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => guardian.setStatus(comment.id, 'ignored', 'Comment ignored without response')}
-            >
-              Ignore
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => guardian.setStatus(comment.id, 'hidden', 'Comment hidden')}
-            >
-              <EyeOff size={14} /> Hide
-            </Button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-4 space-y-3 pt-3 border-t border-white/5">
-          <p className="text-xs text-[#8f97b0]">
-            No reply drafted — recommended action: <strong>{comment.recommendedAction.replace(/_/g, ' ')}</strong>.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                guardian.setStatus(comment.id, 'reported', 'Reported spam/scam');
-                guardian.showToast('Reported and logged.', 'success');
-              }}
-            >
-              <Flag size={14} /> Report
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => guardian.setStatus(comment.id, 'ignored', 'Left without reply')}
-            >
-              Leave It
-            </Button>
-          </div>
-        </div>
-      )}
-    </article>
   );
 }

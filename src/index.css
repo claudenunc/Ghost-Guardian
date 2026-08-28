@@ -1,11 +1,26 @@
 :root {
+  /* Dimensions & Radii */
+  --radius-sm: 0.5rem;
   --radius: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-full: 9999px;
+
+  /* Semantic Color System */
   --background: #0d0f17;
   --foreground: #f4f6fb;
+  --surface: #141724;
+  --surface-raised: #1e2235;
+  --surface-hover: #262b42;
+  
   --card: #141724;
   --card-foreground: #f4f6fb;
   --popover: #141724;
   --popover-foreground: #f4f6fb;
+
+  --text-primary: #f4f6fb;
+  --text-secondary: #8f97b0;
+  --text-muted: #64748b;
+
   --primary: #4de1dc;
   --primary-hover: #3bcac5;
   --primary-foreground: #091a1a;
@@ -15,24 +30,36 @@
   --muted-foreground: #8f97b0;
   --accent: #262b42;
   --accent-foreground: #f4f6fb;
-  --destructive: #f87171;
-  --destructive-foreground: #ffffff;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.12);
-  --ring: rgba(77, 225, 220, 0.4);
   
   --guardian: #4de1dc;
   --guardian-glow: rgba(77, 225, 220, 0.18);
-  --attention: #fbbf24;
-  --attention-foreground: #1c1503;
-  --critical: #f87171;
-  --critical-foreground: #ffffff;
+  --protection: #818cf8;
+  --human-moment: #c084fc;
+  --success: #34d399;
   --positive: #34d399;
   --positive-foreground: #032014;
-  
+  --warning: #fbbf24;
+  --attention: #fbbf24;
+  --attention-foreground: #1c1503;
+  --danger: #f87171;
+  --destructive: #f87171;
+  --destructive-foreground: #ffffff;
+  --critical: #f87171;
+  --critical-foreground: #ffffff;
+
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: rgba(77, 225, 220, 0.5);
+  --focus-ring: 0 0 0 2px var(--background), 0 0 0 4px var(--guardian);
+
+  /* Typography */
   --font-display: "Space Grotesk", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
+
+  /* Transitions & Motion */
+  --motion-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --motion-normal: 250ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 * {
@@ -40,6 +67,11 @@
   border-color: var(--border);
   margin: 0;
   padding: 0;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 html {
@@ -292,12 +324,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .border { border-width: 1px; }
 .border-t { border-top-width: 1px; }
 .border-b { border-bottom-width: 1px; }
+.border-l { border-left-width: 1px; }
+.border-l-2 { border-left-width: 2px; }
+.border-l-4 { border-left-width: 4px; }
 .border-transparent { border-color: transparent; }
 .border-white\/5 { border-color: rgba(255, 255, 255, 0.05); }
 .border-white\/10 { border-color: rgba(255, 255, 255, 0.10); }
 .border-white\/15 { border-color: rgba(255, 255, 255, 0.15); }
 .border-white\/20 { border-color: rgba(255, 255, 255, 0.20); }
 .border-white\/25 { border-color: rgba(255, 255, 255, 0.25); }
+.min-w-0 { min-width: 0px; }
+.min-w-max { min-width: max-content; }
 
 .bg-background { background-color: var(--background); }
 .bg-secondary { background-color: var(--secondary); }
@@ -392,3 +429,159 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .transition-colors { transition-property: color, background-color, border-color; transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1); transition-duration: 150ms; }
 .duration-200 { transition-duration: 200ms; }
 .duration-300 { transition-duration: 300ms; }
+
+/* Public & Auth Layouts */
+.public-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.25rem;
+}
+
+.public-card {
+  width: 100%;
+  max-width: 28rem;
+  padding: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+/* Onboarding */
+.onboarding-form {
+  max-width: 44rem;
+  margin: 2.5rem auto;
+  padding: 2.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.demo-notice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--radius-sm);
+  background-color: rgba(77, 225, 220, 0.08);
+  border: 1px solid rgba(77, 225, 220, 0.2);
+  color: var(--primary);
+  font-size: 0.8125rem;
+}
+
+.form-section {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  background-color: rgba(20, 23, 36, 0.5);
+}
+
+.form-section legend {
+  font-family: var(--font-display);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--foreground);
+  padding: 0 0.5rem;
+}
+
+.form-section label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-top: 0.5rem;
+}
+
+.switch-row strong {
+  font-size: 0.875rem;
+  color: var(--foreground);
+}
+
+.switch-row p {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+}
+
+/* Standard Buttons & App State Panels */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--motion-fast);
+}
+
+.button-secondary {
+  background-color: var(--surface-raised);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.button-secondary:hover {
+  background-color: var(--surface-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+.app-state {
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background-color: var(--surface);
+}
+
+.app-state h1, .app-state h2 {
+  font-size: 1.125rem;
+  color: var(--foreground);
+}
+
+.app-state p {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  max-width: 24rem;
+}
+
+.app-state-unavailable {
+  background-color: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.25);
+  color: var(--danger);
+}
+
+.app-state-error {
+  background-color: rgba(248, 113, 113, 0.1);
+  border-color: var(--danger);
+  color: var(--foreground);
+}
+
+/* Accessibility: Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+

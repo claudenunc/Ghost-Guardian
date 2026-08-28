@@ -14,7 +14,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { GhostMark, Chip, Button } from '../components/guardian/atoms';
-import { demoQuestionClusters } from '../lib/demo-data';
+import { demoQuestionClusters } from '../fixtures/demoWorkspace';
 
 const commentTypes = [
   { label: 'Praise', body: 'Acknowledged personally, in your voice, at the right length.', icon: HeartHandshake },

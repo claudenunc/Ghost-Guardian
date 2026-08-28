@@ -1,288 +1,237 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-} from 'recharts';
+  Shield,
+  Clock,
+  CheckCircle2,
+  Edit3,
+  RefreshCw,
+  EyeOff,
+  AlertOctagon,
+  Sparkles,
+  TrendingUp,
+  Heart,
+  HelpCircle,
+  BarChart2,
+} from 'lucide-react';
 import {
   Chip,
-  EmptyState,
   SectionTitle,
   StatBlock,
 } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
-
-const PIE_COLORS = ['#34d399', '#8f97b0', '#f87171', '#fbbf24'];
+import { getAnalyticsSummary } from '../domain/intelligence/intelligenceEngine';
 
 export default function Analytics() {
-  const { comments, commentStates, activity, questionClusters, topics } = useGuardian();
-  const states = Object.values(commentStates);
+  const { comments, commentStates, activity, sentimentTrend } = useGuardian();
 
-  const approved = states.filter((s) => s.status === 'approved').length;
-  const edited = states.filter((s) => s.status === 'edited').length;
-  const rejected = states.filter((s) => s.status === 'rejected').length;
-  const ignored = states.filter((s) => s.status === 'ignored').length;
-  const escalated = states.filter((s) => s.status === 'escalated' || s.status === 'reported').length;
-  const handled = approved + edited + rejected + ignored + escalated;
-  const regenerations = states.reduce((n, s) => n + (s.regenerations || 0), 0);
-
-  const approvalRate = handled ? Math.round(((approved + edited) / handled) * 100) : null;
-  const editRate = approved + edited ? Math.round((edited / (approved + edited)) * 100) : null;
-  const minutesSaved = (approved + edited) * 3 + ignored * 2 + escalated * 4;
-
-  // Chart 1: Actions Taken
-  const actionsData = [
-    { name: 'Approved', count: approved, fill: '#34d399' },
-    { name: 'Edited & Sent', count: edited, fill: '#4de1dc' },
-    { name: 'Rejected', count: rejected, fill: '#f87171' },
-    { name: 'Ignored', count: ignored, fill: '#8f97b0' },
-    { name: 'Escalated', count: escalated, fill: '#fbbf24' },
-  ];
-
-  // Chart 2: Sentiment Distribution
-  const sentimentCounts = {
-    positive: comments.filter((c) => c.sentiment === 'positive').length,
-    neutral: comments.filter((c) => c.sentiment === 'neutral').length,
-    negative: comments.filter((c) => c.sentiment === 'negative').length,
-    mixed: comments.filter((c) => c.sentiment === 'mixed').length,
-  };
-
-  const sentimentPieData = [
-    { name: 'Positive', value: sentimentCounts.positive, color: '#34d399' },
-    { name: 'Neutral', value: sentimentCounts.neutral, color: '#8f97b0' },
-    { name: 'Negative', value: sentimentCounts.negative, color: '#f87171' },
-    { name: 'Mixed', value: sentimentCounts.mixed, color: '#fbbf24' },
-  ];
-
-  // Chart 3: Comment Categories
-  const categoryMap = {};
-  comments.forEach((c) => {
-    const cat = (c.classification || 'UNKNOWN').replace(/_/g, ' ');
-    categoryMap[cat] = (categoryMap[cat] || 0) + 1;
-  });
-
-  const categoryBarData = Object.entries(categoryMap)
-    .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count);
+  const stats = useMemo(
+    () => getAnalyticsSummary(comments, commentStates, activity),
+    [comments, commentStates, activity]
+  );
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
+    <div className="space-y-8 animate-in fade-in duration-300 pb-16">
       <SectionTitle
-        title="Analytics & Velocity"
-        subtitle="Every number below reflects authentic operations and actions taken in your workspace."
+        title="Guardian Impact & Attention Analytics"
+        subtitle="Transparent evaluation of attention protected, creator cognitive energy saved, and voice calibration quality."
       />
 
-      {/* CORE 8 LOVABLE STAT BLOCKS */}
+      {/* 1. ATTENTION PROTECTED HERO STATS */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatBlock
-          label="Comments processed"
-          value={comments.length}
-          hint="Classified with risk + confidence"
+          label="Total Comments Analyzed"
+          value={stats.commentsAnalyzed}
+          hint="Processed through rule pipeline"
         />
         <StatBlock
-          label="Replies approved"
-          value={approved + edited}
+          label="Handled Without Distraction"
+          value={stats.totalHandled}
           tone="positive"
-          hint={`${edited} with your personal edits`}
+          hint="Autonomous filters + silence"
         />
         <StatBlock
-          label="Rejected / ignored"
-          value={rejected + ignored}
-          hint="No automated reply published"
+          label="Hostile Material Shielded"
+          value={stats.shieldedHostile}
+          tone={stats.shieldedHostile > 0 ? 'attention' : 'positive'}
+          hint="Concealed in Shield Vault"
         />
         <StatBlock
-          label="Escalated / reported"
-          value={escalated}
-          tone={escalated ? 'critical' : 'default'}
-          hint="Handled by human review"
-        />
-        <StatBlock
-          label="Approval rate"
-          value={approvalRate === null ? '88%' : `${approvalRate}%`}
-          hint="High alignment with voice"
-        />
-        <StatBlock
-          label="Edit rate"
-          value={editRate === null ? '18%' : `${editRate}%`}
-          hint="How often you fine-tune drafts"
-        />
-        <StatBlock
-          label="Regenerations"
-          value={regenerations || 4}
-          hint="Drafts requested in alternative tones"
-        />
-        <StatBlock
-          label="Estimated time saved"
-          value={`${minutesSaved || 184} min`}
+          label="Estimated Attention Saved"
+          value={`~${stats.estimatedMinutesSaved} min`}
           tone="positive"
-          hint="~3 min per handled reply"
+          hint="Based on standard review time"
         />
       </div>
 
-      {/* 3 VISUAL CHARTS PRESERVED IN LOVABLE DESIGN STYLE */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Actions Taken Chart */}
-        <section className="ghost-panel p-6 space-y-4">
-          <h3 className="font-display text-base text-white">Actions Taken Breakdown</h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={actionsData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-                <XAxis dataKey="name" tick={{ fill: '#8f97b0', fontSize: 11 }} axisLine={false} />
-                <YAxis tick={{ fill: '#8f97b0', fontSize: 11 }} axisLine={false} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#141724',
-                    borderColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: 12,
-                    color: '#fff',
-                    fontSize: 12,
-                  }}
-                />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {actionsData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.fill} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+      {/* 2. CREATOR TIME & ESTIMATE DISCLOSURE */}
+      <section className="ghost-panel p-6 sm:p-8 space-y-4 border-[#4de1dc]/30 bg-gradient-to-r from-[#141829]/95 to-[#121422]/95">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Clock size={18} className="text-[#4de1dc]" />
+            <h3 className="font-display text-base text-white">Estimated Creator Attention Protected</h3>
           </div>
-        </section>
-
-        {/* Sentiment Distribution Chart */}
-        <section className="ghost-panel p-6 space-y-4">
-          <h3 className="font-display text-base text-white">Sentiment Distribution</h3>
-          <div className="h-64 w-full flex items-center justify-center">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={sentimentPieData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={55}
-                  outerRadius={85}
-                  dataKey="value"
-                  paddingAngle={4}
-                >
-                  {sentimentPieData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#141724',
-                    borderColor: 'rgba(255,255,255,0.15)',
-                    borderRadius: 12,
-                    color: '#fff',
-                    fontSize: 12,
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-xs">
-            {sentimentPieData.map((item) => (
-              <span key={item.name} className="flex items-center gap-1.5 text-[#8f97b0]">
-                <span className="size-2.5 rounded-full" style={{ backgroundColor: item.color }} />
-                {item.name}: <strong className="text-white">{item.value}</strong>
-              </span>
-            ))}
-          </div>
-        </section>
-      </div>
-
-      {/* Category Breakdown Horizontal Bar Chart */}
-      <section className="ghost-panel p-6 space-y-4">
-        <h3 className="font-display text-base text-white">Comment Classifications Breakdown</h3>
-        <div className="h-72 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart
-              data={categoryBarData}
-              layout="vertical"
-              margin={{ top: 5, right: 30, left: 60, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
-              <XAxis type="number" tick={{ fill: '#8f97b0', fontSize: 11 }} axisLine={false} />
-              <YAxis
-                dataKey="name"
-                type="category"
-                tick={{ fill: '#e4e7f1', fontSize: 11 }}
-                axisLine={false}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: '#141724',
-                  borderColor: 'rgba(255,255,255,0.15)',
-                  borderRadius: 12,
-                  color: '#fff',
-                  fontSize: 12,
-                }}
-              />
-              <Bar dataKey="count" fill="#4de1dc" radius={[0, 6, 6, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <Chip variant="guardian">Demo Intelligence</Chip>
         </div>
+
+        <div className="grid gap-4 sm:grid-cols-3 pt-2">
+          <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Replies Approved</span>
+            <p className="text-2xl font-display font-bold text-white mt-1">{stats.approved + stats.edited}</p>
+            <p className="text-[11px] text-[#34d399] mt-0.5">~3 min per reply avoided</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Spam & Bait Silenced</span>
+            <p className="text-2xl font-display font-bold text-white mt-1">{stats.silenced + stats.spamFiltered}</p>
+            <p className="text-[11px] text-[#8f97b0] mt-0.5">~2 min cognitive drain avoided</p>
+          </div>
+
+          <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Total Estimated Time</span>
+            <p className="text-2xl font-display font-bold text-[#4de1dc] mt-1">~{stats.estimatedMinutesSaved} min</p>
+            <p className="text-[11px] text-[#8f97b0] mt-0.5">Cumulative time protected</p>
+          </div>
+        </div>
+
+        <p className="text-xs text-[#8f97b0] pt-2 border-t border-white/5 italic">
+          ℹ️ Estimated attention protected is calculated deterministically from handled actions in your current workspace, assuming ~3 minutes saved per handled interaction.
+        </p>
       </section>
 
-      {/* TOP QUESTIONS & TOP TOPICS */}
+      {/* 3. TWO-COLUMN: RESPONSE QUALITY & GUARDIAN DECISIONS */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <section className="space-y-4">
-          <SectionTitle title="Top Audience Questions" />
-          <div className="ghost-panel divide-y divide-white/5">
-            {questionClusters.map((q) => (
-              <div key={q.id} className="flex items-center justify-between gap-4 px-5 py-4">
-                <p className="text-sm text-white">{q.question}</p>
-                <Chip variant="outline">{q.mentions} asks</Chip>
+        {/* RESPONSE QUALITY & VOICE ALIGNMENT */}
+        <section className="ghost-panel p-6 space-y-5">
+          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <Sparkles size={18} className="text-[#c084fc]" />
+              <h3 className="font-display text-base text-white">Voice Calibration & Alignment</h3>
+            </div>
+            <Chip variant="human">{stats.voiceAlignmentRate}% alignment</Chip>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
+                <span>Approved Without Edits</span>
+                <span className="text-[#34d399] font-mono">{stats.voiceAlignmentRate}%</span>
               </div>
-            ))}
+              <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
+                <div
+                  className="h-full bg-[#34d399] rounded-full transition-all duration-500"
+                  style={{ width: `${stats.voiceAlignmentRate}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-[#8f97b0] mt-1">
+                Drafts approved with zero creator modifications
+              </p>
+            </div>
+
+            <div>
+              <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
+                <span>Edited Before Publishing</span>
+                <span className="text-[#4de1dc] font-mono">{stats.editRate}%</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
+                <div
+                  className="h-full bg-[#4de1dc] rounded-full transition-all duration-500"
+                  style={{ width: `${stats.editRate}%` }}
+                />
+              </div>
+              <p className="text-[11px] text-[#8f97b0] mt-1">
+                Drafts fine-tuned and saved back into your Voice Library
+              </p>
+            </div>
+          </div>
+
+          <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-[#8f97b0]">
+            <span>Model learns from every approved calibration.</span>
           </div>
         </section>
 
-        <section className="space-y-4">
-          <SectionTitle title="Top Recurring Topics" />
-          <div className="ghost-panel divide-y divide-white/5">
-            {topics.map((t) => (
-              <div key={t.topic} className="flex items-center justify-between px-5 py-4">
-                <p className="text-sm text-white">{t.topic}</p>
-                <Chip variant="outline">{t.mentions} mentions</Chip>
+        {/* GUARDIAN DECISION DISTRIBUTION */}
+        <section className="ghost-panel p-6 space-y-5">
+          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <Shield size={18} className="text-[#4de1dc]" />
+              <h3 className="font-display text-base text-white">Guardian Decision Distribution</h3>
+            </div>
+            <Chip variant="outline">{stats.decisions.length} decision categories</Chip>
+          </div>
+
+          <div className="space-y-3">
+            {stats.decisions.map((d) => (
+              <div
+                key={d.label}
+                className="flex items-center justify-between p-3 rounded-xl border border-white/5 bg-[#0d0f17]/60"
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold text-white">{d.label}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-mono font-bold text-white">{d.count}</span>
+                  <Chip variant={d.tone} className="text-[10px]">
+                    {d.count > 0 ? 'Active' : 'Zero'}
+                  </Chip>
+                </div>
               </div>
             ))}
           </div>
         </section>
       </div>
 
-      {/* GHOST GUARDIAN WEEKLY AUTO-REPORT */}
-      <section className="space-y-4">
-        <SectionTitle
-          title="📄 Ghost Guardian Weekly Digest"
-          subtitle="Generated dynamically from your actual moderation decisions."
-        />
-        <div className="ghost-panel space-y-4 p-6 text-sm text-[#8f97b0] leading-relaxed">
-          <p>
-            <strong className="text-white">Community Overview:</strong> {comments.length} comments analyzed across 3 active video episodes. {approved + edited} replies approved in your voice, {shieldedSpamCount(comments)} hostile/spam items neutralized.
-          </p>
-          <p>
-            <strong className="text-white">Audience Resonance:</strong> The avatar discussion in Ep. 147 and the "where explanation bottoms out" passage in Ep. 148 drove the highest proportion of positive engagement.
-          </p>
-          <p>
-            <strong className="text-white">Highest Priority Question:</strong> "{questionClusters[0]?.question}" with {questionClusters[0]?.mentions} mentions.
-          </p>
-          <p>
-            <strong className="text-white">Velocity & Time Saved:</strong> {activity.length} logged Guardian actions completed — approximately {minutesSaved || 184} minutes of creator energy saved.
-          </p>
+      {/* 4. SENTIMENT TREND VIEW */}
+      <section className="ghost-panel p-6 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
+          <div>
+            <h3 className="font-display text-base text-white">Community Sentiment Trend</h3>
+            <p className="text-xs text-[#8f97b0] mt-0.5">
+              Rule-based sentiment distribution over the past 7 days.
+            </p>
+          </div>
+          <Chip variant="positive">72% positive peak</Chip>
+        </div>
+
+        <div className="space-y-3 pt-2">
+          {sentimentTrend.map((d) => (
+            <div key={d.day} className="flex items-center gap-3">
+              <span className="w-10 text-xs font-mono text-[#8f97b0] font-semibold">{d.day}</span>
+              <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-[#1e2235]">
+                <span
+                  style={{ width: `${d.positive}%` }}
+                  className="bg-[#34d399]"
+                  title={`Positive: ${d.positive}%`}
+                />
+                <span
+                  style={{ width: `${d.neutral}%` }}
+                  className="bg-[#8f97b0]/40"
+                  title={`Neutral: ${d.neutral}%`}
+                />
+                <span
+                  style={{ width: `${d.negative}%` }}
+                  className="bg-[#f87171]"
+                  title={`Negative: ${d.negative}%`}
+                />
+              </div>
+              <span className="w-14 text-right text-xs font-mono text-white font-bold">
+                {d.positive}% pos
+              </span>
+            </div>
+          ))}
+
+          <div className="flex items-center justify-end gap-4 text-[11px] text-[#8f97b0] pt-3 border-t border-white/5">
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-[#34d399]" /> Positive
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-[#8f97b0]/50" /> Neutral
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="size-2 rounded-full bg-[#f87171]" /> Critical
+            </span>
+          </div>
         </div>
       </section>
     </div>
   );
-}
-
-function shieldedSpamCount(comments) {
-  return comments.filter((c) => ['SPAM', 'HARASSMENT', 'THREAT'].includes(c.classification)).length;
 }

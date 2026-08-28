@@ -1,264 +1,148 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  Shield,
-  ShieldCheck,
-  Zap,
-  Users,
-  Bell,
-  Download,
-  RotateCcw,
+  Settings as SettingsIcon,
+  User,
   Video,
-  Link2,
-  Bot,
+  Bell,
+  Sliders,
+  Database,
+  AlertTriangle,
   Sparkles,
-  Check,
 } from 'lucide-react';
-import {
-  Button,
-  Chip,
-  SectionTitle,
-  Switch,
-} from '../components/guardian/atoms';
+import { SectionTitle, Chip } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
-
-const modes = [
-  {
-    id: 'copilot',
-    title: 'Copilot',
-    body: 'Guardian drafts, you approve. Nothing publishes without you. Default and recommended.',
-  },
-  {
-    id: 'autopilot',
-    title: 'Autopilot',
-    body: 'Only low-risk categories you approved — simple praise, common FAQs, acknowledgements — go out automatically.',
-  },
-  {
-    id: 'guardian',
-    title: 'Guardian',
-    body: 'Safety-first. Escalations surface immediately and hostile threads default to boundaries or silence.',
-  },
-];
-
-const plans = [
-  { name: 'Free', price: '$0', body: 'Demo mode and limited comment processing.' },
-  { name: 'Creator', price: '$29/mo', body: 'For individual creators with an active comment section.' },
-  { name: 'Pro', price: '$89/mo', body: 'High volume, multiple channels, weekly reports.' },
-  { name: 'Custom Guardian', price: 'Talk to us', body: 'Podcasts, media companies, agencies and creator teams.' },
-];
+import WorkspaceIdentity from '../components/settings/WorkspaceIdentity';
+import PlatformConnections from '../components/settings/PlatformConnections';
+import NotificationCenter from '../components/settings/NotificationCenter';
+import GuardianModeSummary from '../components/settings/GuardianModeSummary';
+import DataPortability from '../components/settings/DataPortability';
+import DangerZone from '../components/settings/DangerZone';
 
 export default function Settings() {
-  const { settings, updateSettings, resetDemo, exportData, showToast } = useGuardian();
+  const { creator } = useGuardian();
+  const [activeTab, setActiveTab] = useState('identity'); // 'identity' | 'platforms' | 'notifications' | 'mode' | 'data' | 'danger'
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      <SectionTitle
-        title="Settings & Controls"
-        subtitle="You are always in control. Pause, switch modes, configure notifications, export backups, or manage your workspace."
-      />
+    <div className="space-y-8 animate-in fade-in duration-300 pb-16">
+      {/* 1. HERO SECTION */}
+      <div className="ghost-panel ghost-glow p-6 sm:p-8 border-[#4de1dc]/30 bg-gradient-to-r from-[#141829]/95 via-[#131726]/95 to-[#1c1830]/95">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="pulse-dot bg-[#4de1dc]" />
+              <span className="text-xs font-bold tracking-[0.2em] text-[#4de1dc] uppercase">
+                Workspace Control Center
+              </span>
+            </div>
+            <h1 className="mt-2 font-display text-2xl sm:text-4xl text-white">
+              Settings, Portability & Operational Control
+            </h1>
+            <p className="mt-2 text-sm text-[#8f97b0] max-w-2xl leading-relaxed">
+              Manage workspace identity, connected platforms, attention notification triggers, operational mode status, and full data backups.
+            </p>
+          </div>
 
-      {/* OPERATING MODE SELECTOR */}
-      <section className="space-y-3">
-        <SectionTitle title="Operating Mode" />
-        <div className="grid gap-3 lg:grid-cols-3">
-          {modes.map((m) => (
+          <div className="flex flex-col items-end gap-1.5 shrink-0">
+            <Chip variant="guardian" className="font-mono">
+              🛡️ {creator?.displayName || 'Alex Chen'}
+            </Chip>
+            <span className="text-[11px] text-[#8f97b0]">
+              {creator?.channelName || 'The Long Signal'} · Demo Mode
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. TAB NAVIGATION */}
+      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto">
+        {[
+          { id: 'identity', label: '1. Workspace Identity', icon: User },
+          { id: 'platforms', label: '2. Platforms', icon: Video },
+          { id: 'notifications', label: '3. Notification Center', icon: Bell },
+          { id: 'mode', label: '4. Operational Mode', icon: Sliders },
+          { id: 'data', label: '5. Data & Backups', icon: Database },
+          { id: 'danger', label: '6. Danger Zone', icon: AlertTriangle },
+        ].map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.id;
+          return (
             <button
-              key={m.id}
+              key={tab.id}
               type="button"
-              onClick={() => {
-                updateSettings({ mode: m.id });
-                showToast(`${m.title} mode active.`, 'success');
-              }}
-              className={`ghost-panel p-5 text-left transition-all cursor-pointer ${
-                settings.mode === m.id ? 'border-[#4de1dc] ghost-glow' : 'hover:border-white/20'
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
+                isActive
+                  ? 'bg-[#1e2235] text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]'
+                  : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'
               }`}
             >
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck size={16} className="text-[#4de1dc]" />
-                  <p className="font-display text-white font-bold">{m.title}</p>
-                </div>
-                {settings.mode === m.id && <Chip variant="guardian">Active</Chip>}
-              </div>
-              <p className="mt-2 text-xs text-[#8f97b0] leading-relaxed">{m.body}</p>
+              <Icon size={14} />
+              <span>{tab.label}</span>
             </button>
-          ))}
-        </div>
-      </section>
-
-      {/* EMERGENCY CONTROLS */}
-      <section className="ghost-panel space-y-4 p-6">
-        <h3 className="font-display text-base text-white">Emergency Controls & Wit</h3>
-        <ToggleRow
-          label="Pause Guardian entirely"
-          hint="Stops all automated activity immediately."
-          checked={settings.paused}
-          onChange={(v) => {
-            updateSettings({ paused: v });
-            showToast(v ? 'Guardian paused.' : 'Guardian resumed.', v ? 'warning' : 'success');
-          }}
-        />
-        <ToggleRow
-          label="Pause auto-replies only"
-          hint="Classification and intelligence keep running; nothing gets published."
-          checked={settings.pauseAutoReplies}
-          onChange={(v) => {
-            updateSettings({ pauseAutoReplies: v });
-            showToast(v ? 'Auto-replies paused.' : 'Auto-replies resumed.', 'info');
-          }}
-        />
-        <ToggleRow
-          label="Guardian Wit"
-          hint="Composed, clever responses to hostility. Outclass it without becoming it — never insults."
-          checked={settings.guardianWit}
-          onChange={(v) => {
-            updateSettings({ guardianWit: v });
-            showToast(v ? 'Guardian Wit enabled.' : 'Guardian Wit disabled.', 'info');
-          }}
-        />
-      </section>
-
-      {/* NOTIFICATIONS */}
-      <section className="ghost-panel space-y-4 p-6">
-        <div className="flex items-center gap-2">
-          <Bell size={16} className="text-[#4de1dc]" />
-          <h3 className="font-display text-base text-white">Creator Notification Preferences</h3>
-        </div>
-        <ToggleRow
-          label="Threats and critical risk alerts"
-          hint="Immediate alert when a safety violation or doxxing risk is flagged."
-          checked={settings.notifyThreats}
-          onChange={(v) => updateSettings({ notifyThreats: v })}
-        />
-        <ToggleRow
-          label="Important and recurring questions"
-          hint="Notify when 5+ commenters ask the same conceptual question."
-          checked={settings.notifyQuestions}
-          onChange={(v) => updateSettings({ notifyQuestions: v })}
-        />
-        <ToggleRow
-          label="Unusual negativity spikes"
-          hint="Alert if hostile sentiment exceeds 20% on any single video."
-          checked={settings.notifySpikes}
-          onChange={(v) => updateSettings({ notifySpikes: v })}
-        />
-        <ToggleRow
-          label="Ghost Guardian Weekly Digest"
-          hint="Receive weekly summaries of time saved, community trends, and top inquiries."
-          checked={settings.notifyWeekly}
-          onChange={(v) => updateSettings({ notifyWeekly: v })}
-        />
-      </section>
-
-      {/* PLATFORM CONNECTIONS */}
-      <section className="space-y-3">
-        <SectionTitle
-          title="Platform Connections"
-          subtitle="YouTube first. The same intelligence pipeline accepts other social platforms."
-        />
-        <div className="ghost-panel space-y-4 p-6">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-[#f87171]/15 text-[#f87171] flex items-center justify-center">
-                <Video size={22} />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-semibold text-white">YouTube Data Integration</p>
-                  <Chip variant="positive">Connected (Demo)</Chip>
-                </div>
-                <p className="text-xs text-[#8f97b0] mt-0.5">
-                  Running on authenticated workspace demo data. Live channel linking uses YouTube OAuth 2.0.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2 pt-2 border-t border-white/5">
-            {['Instagram', 'TikTok', 'X (Twitter)', 'Reddit', 'Discord', 'Facebook'].map((p) => (
-              <Chip key={p} variant="outline">
-                <Link2 size={11} /> {p} — Planned
-              </Chip>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PRICING ARCHITECTURE */}
-      <section className="space-y-3">
-        <SectionTitle
-          title="Subscription Tiers & Plans"
-          subtitle="Transparent pricing architecture built for sustainable creator longevity."
-        />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {plans.map((p) => (
-            <div key={p.name} className="ghost-panel p-5 space-y-2">
-              <div className="flex items-center justify-between">
-                <p className="font-display font-bold text-white">{p.name}</p>
-                {p.name === 'Creator' && <Chip variant="guardian">Popular</Chip>}
-              </div>
-              <p className="text-2xl font-display text-[#4de1dc] font-bold">{p.price}</p>
-              <p className="text-xs text-[#8f97b0] leading-relaxed">{p.body}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* COMING SOON EXPANSIONS */}
-      <section className="space-y-3">
-        <SectionTitle title="Future Expansion Suite" />
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div className="ghost-panel p-5 space-y-2">
-            <div className="flex items-center gap-2 text-[#4de1dc]">
-              <Bot size={18} />
-              <h4 className="font-display text-base text-white">Creator Assistant</h4>
-            </div>
-            <p className="text-xs text-[#8f97b0] leading-relaxed">
-              Episode and guest research, automated show notes, YouTube titles, newsletter drafts, and production checklists — built on your personal knowledge base.
-            </p>
-            <Chip variant="outline">In Active Development</Chip>
-          </div>
-
-          <div className="ghost-panel p-5 space-y-2">
-            <div className="flex items-center gap-2 text-[#4de1dc]">
-              <Sparkles size={18} />
-              <h4 className="font-display text-base text-white">Create Without Fear</h4>
-            </div>
-            <p className="text-xs text-[#8f97b0] leading-relaxed">
-              Shielding mode designed for new creators who hesitate to publish due to anxiety about hostile public comments. Protect your nervous system while building your audience.
-            </p>
-            <Chip variant="outline">In Active Development</Chip>
-          </div>
-        </div>
-      </section>
-
-      {/* DATA MANAGEMENT & EXPORT */}
-      <section className="ghost-panel space-y-4 p-6 border-white/15">
-        <h3 className="font-display text-base text-white">Your Data & Local Storage</h3>
-        <p className="text-xs text-[#8f97b0] leading-relaxed">
-          Ghost Guardian persists your calibrated voice settings, approved knowledge items, and moderation decisions directly in your browser. You can export a full JSON backup anytime.
-        </p>
-
-        <div className="flex flex-wrap items-center gap-3 pt-2">
-          <Button size="sm" onClick={exportData}>
-            <Download size={14} /> Export My Data (JSON Backup)
-          </Button>
-          <Button size="sm" variant="destructive" onClick={resetDemo}>
-            <RotateCcw size={14} /> Reset Workspace to Demo
-          </Button>
-        </div>
-      </section>
-    </div>
-  );
-}
-
-function ToggleRow({ label, hint, checked, onChange }) {
-  return (
-    <div className="flex items-start justify-between gap-4 py-2">
-      <div>
-        <p className="text-xs sm:text-sm font-semibold text-white">{label}</p>
-        {hint && <p className="text-[11px] text-[#8f97b0] mt-0.5">{hint}</p>}
+          );
+        })}
       </div>
-      <Switch checked={checked} onChange={onChange} />
+
+      {/* 3. ACTIVE TAB CONTENT */}
+      {activeTab === 'identity' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Workspace Identity"
+            subtitle="Configure creator profile, channel naming, and display metadata."
+          />
+          <WorkspaceIdentity />
+        </div>
+      )}
+
+      {activeTab === 'platforms' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Platform Connections"
+            subtitle="Manage YouTube synchronization and review upcoming social integrations."
+          />
+          <PlatformConnections />
+        </div>
+      )}
+
+      {activeTab === 'notifications' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Notification Triggers"
+            subtitle="Configure real-time Guardian interruptions, digest schedules, and quiet hours."
+          />
+          <NotificationCenter />
+        </div>
+      )}
+
+      {activeTab === 'mode' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Operational Mode Summary"
+            subtitle="Overview of Ghost Guardian's active posture and link to the Policy Studio."
+          />
+          <GuardianModeSummary />
+        </div>
+      )}
+
+      {activeTab === 'data' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Data Portability & Backup"
+            subtitle="Export deterministic JSON backups or restore previous workspace states safely."
+          />
+          <DataPortability />
+        </div>
+      )}
+
+      {activeTab === 'danger' && (
+        <div className="space-y-4 animate-in fade-in duration-200">
+          <SectionTitle
+            title="Danger Zone & Session Actions"
+            subtitle="Reset demo fixtures or clear local browser storage."
+          />
+          <DangerZone />
+        </div>
+      )}
     </div>
   );
 }

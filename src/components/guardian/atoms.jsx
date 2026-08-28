@@ -24,6 +24,8 @@ export function Chip({
     attention: 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
     critical: 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
     positive: 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
+    human: 'bg-[#c084fc]/15 text-[#c084fc] border-[#c084fc]/35',
+    shield: 'bg-[#818cf8]/15 text-[#818cf8] border-[#818cf8]/35',
   };
 
   return (
@@ -63,12 +65,80 @@ export function RiskChip({ risk }) {
   );
 }
 
+export function RuleSignalChip({ signal }) {
+  const map = {
+    strong_match: { label: 'Strong match', variant: 'guardian' },
+    match: { label: 'Match', variant: 'muted' },
+    weak_match: { label: 'Weak match', variant: 'outline' },
+    needs_review: { label: 'Needs review', variant: 'attention' },
+  };
+
+  const current = map[signal] || { label: 'Match', variant: 'muted' };
+
+  return (
+    <Chip variant={current.variant}>
+      <span
+        style={{
+          width: 4,
+          height: 4,
+          borderRadius: '50%',
+          backgroundColor:
+            current.variant === 'guardian'
+              ? '#4de1dc'
+              : current.variant === 'attention'
+              ? '#fbbf24'
+              : '#8f97b0',
+        }}
+      />
+      {current.label}
+    </Chip>
+  );
+}
+
+export function HumanMomentChip({ className = '' }) {
+  return (
+    <Chip variant="human" className={`shadow-[0_0_12px_rgba(192,132,252,0.15)] ${className}`}>
+      <span
+        style={{
+          width: 5,
+          height: 5,
+          borderRadius: '50%',
+          backgroundColor: '#c084fc',
+        }}
+      />
+      Human Moment
+    </Chip>
+  );
+}
+
+export function PriorityChip({ priority, className = '' }) {
+  const map = {
+    1: { label: 'Human Moment', variant: 'human' },
+    2: { label: 'Critical Safety', variant: 'critical' },
+    3: { label: 'Sensitive Disclosure', variant: 'human' },
+    4: { label: 'High Engagement', variant: 'attention' },
+    5: { label: 'Question', variant: 'guardian' },
+    6: { label: 'Routine', variant: 'muted' },
+    7: { label: 'Silence Recommended', variant: 'outline' },
+    8: { label: 'Shielded Hostile', variant: 'critical' },
+  };
+
+  const item = map[priority] || { label: 'Priority', variant: 'muted' };
+  return (
+    <Chip variant={item.variant} className={className}>
+      {item.label}
+    </Chip>
+  );
+}
+
 const severeClasses = ['HARASSMENT', 'HATE', 'THREAT', 'TROLLING', 'SPAM', 'SCAM'];
 
 export function ClassificationChip({ value }) {
   const isSevere = severeClasses.includes(value);
+  const isSensitive = value === 'SENSITIVE';
+  const variant = isSevere ? 'critical' : isSensitive ? 'human' : 'guardian';
   return (
-    <Chip variant={isSevere ? 'critical' : 'guardian'}>
+    <Chip variant={variant}>
       {String(value || '').replace(/_/g, ' ')}
     </Chip>
   );
@@ -80,8 +150,9 @@ export function StrategyChip({ value }) {
 
 export function ActionChip({ value }) {
   const severe = value === 'escalate' || value === 'report' || value === 'hide' || value === 'human_review';
+  const isSilence = value === 'silence';
   return (
-    <Chip variant={severe ? 'attention' : 'muted'}>
+    <Chip variant={severe ? 'attention' : isSilence ? 'outline' : 'muted'}>
       {String(value || '').replace(/_/g, ' ')}
     </Chip>
   );

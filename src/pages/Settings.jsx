@@ -54,7 +54,7 @@ export default function Settings() {
       </div>
 
       {/* 2. TAB NAVIGATION */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto scrollbar-none">
         {[
           { id: 'identity', label: '1. Workspace Identity', icon: User },
           { id: 'platforms', label: '2. Platforms', icon: Video },
@@ -70,7 +70,7 @@ export default function Settings() {
               key={tab.id}
               type="button"
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
                 isActive
                   ? 'bg-[#1e2235] text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]'
                   : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'

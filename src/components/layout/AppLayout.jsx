@@ -57,19 +57,19 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen ghost-aurora pb-24 lg:pb-12 text-[#f4f6fb]">
+    <div className="min-h-screen ghost-aurora pb-28 lg:pb-12 text-[#f4f6fb]">
       {/* Sticky Header */}
       <header className="sticky top-0 z-30 border-b border-white/10 bg-[#0d0f17]/90 backdrop-blur-md">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
-          <Link to="/" className="flex items-center gap-2.5 group">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5 group shrink-0">
             <GhostMark className="transition-transform group-hover:scale-105" />
             <span className="font-display text-sm tracking-[0.2em] uppercase text-white font-bold">
               Ghost Guardian
             </span>
           </Link>
 
-          <div className="flex items-center gap-2.5">
-            <Chip variant={settings.paused ? 'attention' : 'positive'}>
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+            <Chip variant={settings.paused ? 'attention' : 'positive'} className="shrink-0">
               <span
                 style={{
                   width: 6,
@@ -82,7 +82,7 @@ export default function AppLayout() {
             </Chip>
 
             {needsAttention > 0 ? (
-              <Chip variant="critical">
+              <Chip variant="critical" className="hidden sm:inline-flex shrink-0">
                 <span className="pulse-dot" style={{ backgroundColor: '#f87171' }} />
                 {needsAttention} need you
               </Chip>
@@ -92,10 +92,10 @@ export default function AppLayout() {
               size="sm"
               variant={settings.paused ? 'default' : 'destructive'}
               onClick={togglePause}
-              className="gap-1.5"
+              className="gap-1.5 shrink-0"
             >
               {settings.paused ? <Play size={14} /> : <Pause size={14} />}
-              {settings.paused ? 'Resume' : 'Pause Shield'}
+              <span className="hidden sm:inline">{settings.paused ? 'Resume' : 'Pause Shield'}</span>
             </Button>
           </div>
         </div>
@@ -140,13 +140,13 @@ export default function AppLayout() {
             to={to}
             end={end}
             className={({ isActive }) =>
-              `flex flex-1 flex-col items-center gap-1 rounded-lg py-1 text-[10px] transition-colors ${
+              `flex flex-1 flex-col items-center gap-1 rounded-lg py-1 text-[9px] transition-colors ${
                 isActive ? 'text-[#4de1dc] font-bold' : 'text-[#8f97b0]'
               }`
             }
           >
             <Icon size={18} strokeWidth={1.8} />
-            <span>{label}</span>
+            <span className="whitespace-nowrap truncate max-w-full">{to === '/app/rules' ? 'Rules' : label}</span>
           </NavLink>
         ))}
       </nav>

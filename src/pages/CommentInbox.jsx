@@ -174,8 +174,8 @@ export default function CommentInbox() {
           </div>
 
           {/* Search input & bulk action */}
-          <div className="flex items-center gap-2 shrink-0">
-            <div className="relative min-w-[220px] w-full sm:w-auto">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0 w-full lg:w-auto">
+            <div className="relative min-w-0 w-full sm:w-auto sm:min-w-[220px]">
               <Search
                 size={14}
                 className="absolute left-3 top-1/2 -translate-y-1/2 text-[#8f97b0]"
@@ -195,6 +195,7 @@ export default function CommentInbox() {
                 variant="default"
                 onClick={handleApproveAllReady}
                 title="1-click approve all pending drafts in this lane"
+                className="shrink-0"
               >
                 <CheckCheck size={14} /> Approve All ({filteredComments.length})
               </Button>

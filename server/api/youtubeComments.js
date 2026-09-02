@@ -44,6 +44,7 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
     let videoId = query?.videoId;
     let channelId = query?.channelId;
     let maxResults = query?.maxResults || '50';
+    let passedApiKey = query?.apiKey;
 
     if (!videoId && !channelId) {
       // Parse query params from URL if req.url exists
@@ -52,6 +53,9 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
         videoId = parsedUrl.searchParams.get('videoId');
         channelId = parsedUrl.searchParams.get('channelId');
         maxResults = parsedUrl.searchParams.get('maxResults') || '50';
+        if (!passedApiKey) {
+          passedApiKey = parsedUrl.searchParams.get('apiKey');
+        }
       }
     }
 
@@ -61,7 +65,7 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
       });
     }
 
-    const apiKey = process.env.YOUTUBE_API_KEY;
+    const apiKey = process.env.YOUTUBE_API_KEY || passedApiKey;
     if (!apiKey) {
       return sendJson(500, {
         error: 'YouTube API key is missing. Set YOUTUBE_API_KEY in your environment variables.',

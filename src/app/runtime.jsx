@@ -158,6 +158,34 @@ function reducer(state, action) {
       return { ...action.payload, session: state.session, toast: null };
     case 'IMPORT_WORKSPACE':
       return { ...state, ...action.payload, toast: { message: 'Workspace restored from backup.', type: 'success' } };
+    case 'INGEST_YOUTUBE_COMMENTS': {
+      const { comments: newComments, video } = action.payload;
+      const existingIds = new Set((state.comments || []).map((c) => c.id));
+      const freshComments = (newComments || []).filter((c) => !existingIds.has(c.id));
+
+      const newStates = { ...(state.commentStates || {}) };
+      freshComments.forEach((c) => {
+        newStates[c.id] = {
+          status: c.recommendedAction === 'silence' || c.recommendedAction === 'hide' ? 'silenced' : 'pending',
+          activeTone: 'warm',
+          responseText: c.drafts?.warm || c.drafts?.calm || '',
+          wasEdited: false,
+          savedAsExample: false,
+          regenerations: 0,
+        };
+      });
+
+      const updatedVideos = video && !(state.videos || []).some((v) => v.id === video.id)
+        ? [video, ...(state.videos || [])]
+        : (state.videos || []);
+
+      return {
+        ...state,
+        comments: [...freshComments, ...(state.comments || [])],
+        commentStates: newStates,
+        videos: updatedVideos,
+      };
+    }
     case 'SET_TOAST':
       return { ...state, toast: action.payload };
     case 'CLEAR_TOAST':
@@ -278,21 +306,26 @@ export function ApplicationProvider({ children }) {
     }
   }, []);
 
-  const fetchYouTubeComments = useCallback(async ({ videoId, channelId }) => {
+  const fetchYouTubeComments = useCallback(async ({ videoId, channelId, apiKey }) => {
     try {
       const params = new URLSearchParams();
       if (videoId) params.set('videoId', videoId);
       if (channelId) params.set('channelId', channelId);
+      if (apiKey) params.set('apiKey', apiKey);
       const res = await fetch(`/api/youtube/comments?${params.toString()}`);
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.error || `Server responded with ${res.status}`);
+        throw new Error(data.error || `Server responded with ${res.status}`);
       }
-      return await res.json();
+      return data;
     } catch (err) {
       console.warn('fetchYouTubeComments error:', err.message);
       return { comments: [], error: err.message };
     }
+  }, []);
+
+  const ingestComments = useCallback(({ comments, video }) => {
+    dispatch({ type: 'INGEST_YOUTUBE_COMMENTS', payload: { comments, video } });
   }, []);
 
   const value = useMemo(() => ({
@@ -320,12 +353,13 @@ export function ApplicationProvider({ children }) {
     generateAiResponse,
     classifyComment,
     fetchYouTubeComments,
+    ingestComments,
     resetDemo,
     exportData,
     importWorkspace,
     showToast,
     dispatch,
-  }), [approve, exportData, importWorkspace, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments]);
+  }), [approve, exportData, importWorkspace, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments, ingestComments]);
 
   return <ApplicationContext.Provider value={value}>{children}</ApplicationContext.Provider>;
 }

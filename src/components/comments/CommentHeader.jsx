@@ -23,24 +23,35 @@ export default function CommentHeader({ comment, commenter, video }) {
       {/* Left: Author identity & context */}
       <div className="flex items-center gap-3 min-w-0">
         <div
-          className={`size-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 transition-colors ${
+          className={`size-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden transition-colors ${
             isHuman
-              ? 'bg-[#c084fc]/15 text-[#c084fc] border border-[#c084fc]/30 shadow-[0_0_12px_rgba(192,132,252,0.15)]'
-              : 'bg-[#1e2235] border border-white/10 text-[#4de1dc]'
+              ? 'bg-[#FF007A]/15 text-[#FF007A] border border-[#FF007A]/30 shadow-[0_0_12px_rgba(255,0,122,0.25)]'
+              : 'bg-[#0a0a0a] border border-white/10 text-[#0A00FF]'
           }`}
         >
-          {commenter?.displayName?.[0] || '?'}
+          {comment.authorAvatar ? (
+            <img src={comment.authorAvatar} alt="" className="size-full object-cover" />
+          ) : (
+            (commenter?.displayName?.[0] || comment.author?.[0] || '?').toUpperCase()
+          )}
         </div>
 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-bold text-white truncate">
-              {commenter?.displayName || 'Community Member'}
+              {commenter?.displayName || comment.author || 'Community Member'}
             </span>
-            <span className="text-xs text-[#8f97b0]">{commenter?.handle}</span>
+            <span className="text-xs text-[#a0a0a0] font-mono">
+              {commenter?.handle || comment.authorHandle || (comment.platform === 'youtube' ? 'YouTube' : '')}
+            </span>
             {commenter?.category === 'returning' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#4de1dc]/10 px-2 py-0.5 text-[10px] font-medium text-[#4de1dc]">
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#0A00FF]/10 px-2 py-0.5 text-[10px] font-medium text-[#0A00FF] border border-[#0A00FF]/25">
                 <UserCheck size={10} /> Returning ({commenter.episodesParticipated || 0} eps)
+              </span>
+            )}
+            {comment.platform === 'youtube' && !commenter && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#FF1400]/10 px-2 py-0.5 text-[10px] font-medium text-[#FF2A00] border border-[#FF1400]/25">
+                YouTube Live
               </span>
             )}
           </div>

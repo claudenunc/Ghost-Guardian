@@ -4,10 +4,10 @@ import { Shield } from 'lucide-react';
 export function GhostMark({ className = '' }) {
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-xl border border-white/10 bg-[#1e2235] text-[#4de1dc] shadow-[0_0_15px_rgba(77,225,220,0.2)] ${className}`}
+      className={`inline-flex items-center justify-center rounded-xl border border-[#0A00FF]/50 bg-[#0a0a0a] text-[#0A00FF] shadow-[0_0_20px_rgba(10,0,255,0.45),inset_0_1px_0_rgba(255,255,255,0.2)] ${className}`}
       style={{ width: '2.25rem', height: '2.25rem' }}
     >
-      <Shield size={18} strokeWidth={2} />
+      <Shield size={18} strokeWidth={2.2} />
     </span>
   );
 }
@@ -18,19 +18,19 @@ export function Chip({
   className = '',
 }) {
   const styles = {
-    muted: 'bg-[#1e2235] text-[#e4e7f1] border-white/5',
-    outline: 'bg-transparent text-[#8f97b0] border-white/10',
-    guardian: 'bg-[#4de1dc]/15 text-[#4de1dc] border-[#4de1dc]/30',
-    attention: 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/30',
-    critical: 'bg-[#f87171]/15 text-[#f87171] border-[#f87171]/30',
-    positive: 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/30',
-    human: 'bg-[#c084fc]/15 text-[#c084fc] border-[#c084fc]/35',
-    shield: 'bg-[#818cf8]/15 text-[#818cf8] border-[#818cf8]/35',
+    muted: 'bg-[#0a0a0a] text-white border-white/10',
+    outline: 'bg-transparent text-[#a0a0a0] border-white/10',
+    guardian: 'bg-[#0A00FF]/15 text-[#0A00FF] border-[#0A00FF]/40 shadow-[0_0_14px_rgba(10,0,255,0.25)]',
+    attention: 'bg-[#FF6A00]/15 text-[#FF6A00] border-[#FF6A00]/40 shadow-[0_0_14px_rgba(255,106,0,0.25)]',
+    critical: 'bg-[#FF1400]/15 text-[#FF2A00] border-[#FF1400]/40 shadow-[0_0_14px_rgba(255,20,0,0.25)]',
+    positive: 'bg-[#00FF66]/15 text-[#00FF66] border-[#00FF66]/40 shadow-[0_0_14px_rgba(0,255,102,0.25)]',
+    human: 'bg-[#FF007A]/15 text-[#FF007A] border-[#FF007A]/40 shadow-[0_0_14px_rgba(255,0,122,0.25)]',
+    shield: 'bg-[#7A00FF]/15 text-[#A000FF] border-[#7A00FF]/40 shadow-[0_0_14px_rgba(122,0,255,0.25)]',
   };
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide uppercase ${styles[variant] || styles.muted} ${className}`}
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-0.5 text-[11px] font-mono font-bold tracking-wider uppercase ${styles[variant] || styles.muted} ${className}`}
     >
       {children}
     </span>
@@ -54,10 +54,16 @@ export function RiskChip({ risk }) {
           borderRadius: '50%',
           backgroundColor:
             risk === 'low'
-              ? '#34d399'
+              ? '#00FF66'
               : risk === 'medium'
-              ? '#fbbf24'
-              : '#f87171',
+              ? '#FF6A00'
+              : '#FF1400',
+          boxShadow:
+            risk === 'low'
+              ? '0 0 8px #00FF66'
+              : risk === 'medium'
+              ? '0 0 8px #FF6A00'
+              : '0 0 8px #FF1400',
         }}
       />
       {risk} risk
@@ -84,10 +90,10 @@ export function RuleSignalChip({ signal }) {
           borderRadius: '50%',
           backgroundColor:
             current.variant === 'guardian'
-              ? '#4de1dc'
+              ? '#0A00FF'
               : current.variant === 'attention'
-              ? '#fbbf24'
-              : '#8f97b0',
+              ? '#FF6A00'
+              : '#a0a0a0',
         }}
       />
       {current.label}
@@ -97,13 +103,14 @@ export function RuleSignalChip({ signal }) {
 
 export function HumanMomentChip({ className = '' }) {
   return (
-    <Chip variant="human" className={`shadow-[0_0_12px_rgba(192,132,252,0.15)] ${className}`}>
+    <Chip variant="human" className={`shadow-[0_0_16px_rgba(255,0,122,0.35)] ${className}`}>
       <span
         style={{
           width: 5,
           height: 5,
           borderRadius: '50%',
-          backgroundColor: '#c084fc',
+          backgroundColor: '#FF007A',
+          boxShadow: '0 0 8px #FF007A',
         }}
       />
       Human Moment
@@ -166,16 +173,16 @@ export function StatBlock({
 }) {
   const toneStyle = {
     default: 'text-white',
-    attention: 'text-[#fbbf24]',
-    critical: 'text-[#f87171]',
-    positive: 'text-[#34d399]',
+    attention: 'text-[#FF6A00] drop-shadow-[0_0_12px_rgba(255,106,0,0.5)]',
+    critical: 'text-[#FF2A00] drop-shadow-[0_0_12px_rgba(255,20,0,0.5)]',
+    positive: 'text-[#00FF66] drop-shadow-[0_0_12px_rgba(0,255,102,0.5)]',
   }[tone] || 'text-white';
 
   return (
-    <div className="ghost-panel p-5">
-      <p className="text-[11px] tracking-widest text-[#8f97b0] uppercase font-medium">{label}</p>
-      <p className={`mt-2 font-display text-2xl sm:text-3xl ${toneStyle}`}>{value}</p>
-      {hint ? <p className="mt-1 text-xs text-[#8f97b0]">{hint}</p> : null}
+    <div className="ghost-panel p-5 space-y-2">
+      <p className="text-[11px] tracking-widest text-[#a0a0a0] uppercase font-mono font-semibold">{label}</p>
+      <p className={`font-display text-2xl sm:text-3xl font-extrabold ${toneStyle}`}>{value}</p>
+      {hint ? <p className="text-xs text-[#a0a0a0]">{hint}</p> : null}
     </div>
   );
 }
@@ -188,8 +195,8 @@ export function SectionTitle({
   return (
     <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h2 className="font-display text-xl sm:text-2xl text-white tracking-tight">{title}</h2>
-        {subtitle ? <p className="mt-1 text-sm text-[#8f97b0]">{subtitle}</p> : null}
+        <h2 className="font-display text-xl sm:text-2xl text-white tracking-wide uppercase font-bold">{title}</h2>
+        {subtitle ? <p className="mt-1 text-xs sm:text-sm text-[#a0a0a0]">{subtitle}</p> : null}
       </div>
       {action}
     </div>
@@ -198,7 +205,7 @@ export function SectionTitle({
 
 export function EmptyState({ children }) {
   return (
-    <div className="ghost-panel p-8 text-center text-sm text-[#8f97b0]">
+    <div className="ghost-panel p-8 text-center text-sm text-[#a0a0a0]">
       {children}
     </div>
   );
@@ -215,19 +222,21 @@ export function Button({
   asChild,
   ...props
 }) {
+  // Reactor-core buttons: military-grade, pressurized, dimensional beveled frames, internal plasma glow
   const variants = {
-    default: 'bg-[#4de1dc] hover:bg-[#3bcac5] text-[#091a1a] font-semibold shadow-md',
-    outline: 'bg-transparent border border-white/15 text-white hover:bg-white/5 hover:border-white/25',
-    secondary: 'bg-[#1e2235] hover:bg-[#262b42] text-white border border-white/10',
-    destructive: 'bg-[#f87171] hover:bg-[#ef4444] text-white font-semibold shadow-md',
-    ghost: 'bg-transparent text-[#8f97b0] hover:text-white hover:bg-white/5 border-transparent',
+    default: 'bg-[#0a0a0a] text-white border border-[#0A00FF] shadow-[0_0_18px_rgba(10,0,255,0.4),inset_0_1px_0_rgba(255,255,255,0.2)] hover:bg-[#0200F1] hover:border-[#0A00FF] hover:shadow-[0_0_28px_rgba(10,0,255,0.7),inset_0_1px_0_rgba(255,255,255,0.4)]',
+    primary: 'bg-[#0200F1] text-white border border-[#0A00FF] shadow-[0_0_24px_rgba(10,0,255,0.5),inset_0_1px_0_rgba(255,255,255,0.4)] hover:bg-[#0A00FF] hover:shadow-[0_0_36px_rgba(10,0,255,0.8)]',
+    outline: 'bg-[#0a0a0a] border border-white/15 text-white hover:border-[#0A00FF] hover:shadow-[0_0_16px_rgba(10,0,255,0.35)]',
+    secondary: 'bg-[#0a0a0a] hover:bg-[#141414] text-[#a0a0a0] hover:text-white border border-white/10',
+    destructive: 'bg-[#0a0a0a] text-[#FF2A00] border border-[#FF1400] shadow-[0_0_18px_rgba(255,20,0,0.35),inset_0_1px_0_rgba(255,255,255,0.15)] hover:bg-[#FF1400] hover:text-white hover:shadow-[0_0_28px_rgba(255,20,0,0.7)]',
+    ghost: 'bg-transparent text-[#a0a0a0] hover:text-white hover:bg-white/5 border-transparent',
   };
 
   const sizes = {
     sm: 'px-3 py-1.5 text-xs rounded-lg gap-1.5',
-    md: 'px-4 py-2 text-sm rounded-xl gap-2',
-    lg: 'px-6 py-3 text-base rounded-xl gap-2.5 font-semibold',
-    icon: 'p-2 rounded-xl',
+    md: 'px-4 py-2 text-xs sm:text-sm rounded-lg gap-2',
+    lg: 'px-6 py-3 text-sm sm:text-base rounded-lg gap-2.5 font-bold',
+    icon: 'p-2 rounded-lg',
   };
 
   return (
@@ -235,7 +244,7 @@ export function Button({
       type={type}
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex items-center justify-center font-sans transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${variants[variant] || variants.default} ${sizes[size] || sizes.md} ${className}`}
+      className={`inline-flex items-center justify-center font-display font-bold uppercase tracking-wider transition-all duration-150 active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none cursor-pointer ${variants[variant] || variants.default} ${sizes[size] || sizes.md} ${className}`}
       {...props}
     >
       {children}
@@ -250,7 +259,7 @@ export function Input({ value, onChange, placeholder, className = '', type = 'te
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full rounded-xl border border-white/10 bg-[#0d0f17]/70 px-3.5 py-2 text-sm text-white placeholder:text-[#8f97b0]/50 focus:border-[#4de1dc] focus:outline-none focus:ring-1 focus:ring-[#4de1dc]/50 transition-colors ${className}`}
+      className={`w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3.5 py-2 text-sm text-white placeholder:text-[#a0a0a0]/50 focus:border-[#0A00FF] focus:outline-none focus:ring-1 focus:ring-[#0A00FF] transition-colors font-mono ${className}`}
       {...props}
     />
   );
@@ -263,7 +272,7 @@ export function Textarea({ value, onChange, placeholder, rows = 3, className = '
       value={value}
       onChange={onChange}
       placeholder={placeholder}
-      className={`w-full rounded-xl border border-white/10 bg-[#0d0f17]/70 px-3.5 py-2.5 text-sm text-white placeholder:text-[#8f97b0]/50 focus:border-[#4de1dc] focus:outline-none focus:ring-1 focus:ring-[#4de1dc]/50 transition-colors resize-y ${className}`}
+      className={`w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3.5 py-2.5 text-sm text-white placeholder:text-[#a0a0a0]/50 focus:border-[#0A00FF] focus:outline-none focus:ring-1 focus:ring-[#0A00FF] transition-colors resize-y ${className}`}
       {...props}
     />
   );
@@ -276,8 +285,8 @@ export function Switch({ checked, onChange }) {
       role="switch"
       aria-checked={checked}
       onClick={() => onChange && onChange(!checked)}
-      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-        checked ? 'bg-[#4de1dc]' : 'bg-[#1e2235]'
+      className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border border-white/20 transition-colors duration-200 ease-in-out focus:outline-none ${
+        checked ? 'bg-[#0A00FF] shadow-[0_0_15px_#0A00FF]' : 'bg-[#0a0a0a]'
       }`}
     >
       <span
@@ -299,7 +308,7 @@ export function Slider({ value = [50], max = 100, step = 5, onChange }) {
       step={step}
       value={val}
       onChange={(e) => onChange && onChange(Number(e.target.value))}
-      className="w-full h-1.5 bg-[#1e2235] rounded-lg appearance-none cursor-pointer accent-[#4de1dc]"
+      className="w-full h-1.5 bg-[#141414] rounded-lg appearance-none cursor-pointer accent-[#0A00FF]"
     />
   );
 }

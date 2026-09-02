@@ -101,11 +101,35 @@ export function createDemoGuardianProvider() {
   return { environment: 'demo', processComment: processWithRules };
 }
 
-export function createProductionGuardianProvider() {
+export function createProductionGuardianProvider({ apiBaseUrl = '' } = {}) {
   return {
-    environment: 'production-unconfigured',
-    processComment() {
-      throw new Error('Production Guardian provider is not configured.');
+    environment: 'production',
+    async classifyComment(commentText) {
+      const res = await fetch(`${apiBaseUrl}/api/classify-comment`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentText }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server responded with ${res.status}`);
+      }
+      return await res.json();
+    },
+    async generateResponse({ commentText, commentClassification, creatorVoiceProfile }) {
+      const res = await fetch(`${apiBaseUrl}/api/generate-response`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentText, commentClassification, creatorVoiceProfile }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server responded with ${res.status}`);
+      }
+      return await res.json();
+    },
+    processComment(comment, options) {
+      return processWithRules(comment, options);
     },
   };
 }

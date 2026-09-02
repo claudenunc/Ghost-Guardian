@@ -238,6 +238,63 @@ export function ApplicationProvider({ children }) {
     showToast('Workspace successfully restored from backup.', 'success');
   }, [showToast]);
 
+  const generateAiResponse = useCallback(async ({ commentText, commentClassification, creatorVoiceProfile }) => {
+    try {
+      const res = await fetch('/api/generate-response', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          commentText,
+          commentClassification,
+          creatorVoiceProfile: creatorVoiceProfile || state.voice,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server responded with ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('generateAiResponse fallback:', err.message);
+      return { responseText: '', tokensUsed: 0, error: err.message };
+    }
+  }, [state.voice]);
+
+  const classifyComment = useCallback(async (commentText) => {
+    try {
+      const res = await fetch('/api/classify-comment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ commentText }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server responded with ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('classifyComment fallback:', err.message);
+      return { classification: 'UNKNOWN', confidence: 0.5, reasoning: err.message, error: err.message };
+    }
+  }, []);
+
+  const fetchYouTubeComments = useCallback(async ({ videoId, channelId }) => {
+    try {
+      const params = new URLSearchParams();
+      if (videoId) params.set('videoId', videoId);
+      if (channelId) params.set('channelId', channelId);
+      const res = await fetch(`/api/youtube/comments?${params.toString()}`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Server responded with ${res.status}`);
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('fetchYouTubeComments error:', err.message);
+      return { comments: [], error: err.message };
+    }
+  }, []);
+
   const value = useMemo(() => ({
     ...state,
     runtime: { mode: services.mode, isDemo: services.mode === 'demo', platform: services.platform, guardian: services.guardian },
@@ -260,12 +317,15 @@ export function ApplicationProvider({ children }) {
     updateOpportunityStatus: (id, status) => dispatch({ type: 'UPDATE_OPPORTUNITY_STATUS', payload: { id, status } }),
     updatePolicy: (updates, reason) => dispatch({ type: 'UPDATE_POLICY', payload: { updates, reason } }),
     applyPolicyPreset: (preset) => dispatch({ type: 'APPLY_POLICY_PRESET', payload: preset }),
+    generateAiResponse,
+    classifyComment,
+    fetchYouTubeComments,
     resetDemo,
     exportData,
     importWorkspace,
     showToast,
     dispatch,
-  }), [approve, exportData, importWorkspace, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus]);
+  }), [approve, exportData, importWorkspace, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments]);
 
   return <ApplicationContext.Provider value={value}>{children}</ApplicationContext.Provider>;
 }

@@ -7,8 +7,10 @@ import { hashPassword, verifyPassword, createSessionToken, verifySessionToken } 
 import { encrypt, decrypt } from '../security/encryption.js';
 import { youtubeClient } from '../youtube/youtubeClient.js';
 import { llmGuardianProvider } from '../llm/llmProvider.js';
-import { evaluateCommentPolicy, defaultGuardianPolicy } from '../../src/domain/policy/guardianPolicy.js';
 import { Category, RecommendedAction } from '../../src/domain/guardian/contracts.js';
+import { handleGenerateResponse } from './generateResponse.js';
+import { handleYoutubeComments } from './youtubeComments.js';
+import { handleClassifyComment } from './classifyComment.js';
 
 export function createApiRouter() {
   return async function handleRequest(req, res) {
@@ -323,6 +325,21 @@ export function createApiRouter() {
         } catch (err) {
           return sendJson(500, { error: `Failed to post reply to YouTube: ${err.message}` });
         }
+      }
+
+      // ----------------------------------------------------
+      // SERVER-SIDE AI & YOUTUBE API ENDPOINTS
+      // ----------------------------------------------------
+      if (pathname === '/api/generate-response' && method === 'POST') {
+        return await handleGenerateResponse(req, res);
+      }
+
+      if (pathname === '/api/youtube/comments' && method === 'GET') {
+        return await handleYoutubeComments(req, res);
+      }
+
+      if (pathname === '/api/classify-comment' && method === 'POST') {
+        return await handleClassifyComment(req, res);
       }
 
       // Route Not Found

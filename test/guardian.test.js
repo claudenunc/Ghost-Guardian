@@ -30,6 +30,10 @@ import {
   getAnalyticsSummary,
   SignalType,
   OpportunityStatus,
+  calculateTimeSaved,
+  generateSocialShareTemplates,
+  generateTimeSavedReport,
+  TIME_SAVED_RATES,
 } from '../src/domain/intelligence/intelligenceEngine.js';
 import {
   evaluateCommentPolicy,
@@ -809,6 +813,81 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       const unsafeCheck = evaluateCommentPolicy('I will find you and hurt you', Category.UNKNOWN, { policy });
       assert.equal(unsafeCheck.requiresHumanReview, true);
       assert.equal(unsafeCheck.finalAction, RecommendedAction.ESCALATE);
+    });
+  });
+
+  describe('Pass 9: Creator Time Saved Widget & Attention Valuation Engine', () => {
+    it('calculates monthly projected baseline (47 hours, $2,350 at default $50/hr)', () => {
+      const result = calculateTimeSaved([], {}, 50, { useMonthlyProjection: true });
+
+      assert.equal(result.totalHours, 47);
+      assert.equal(result.dollarValue, 2350);
+      assert.equal(result.hourlyRate, 50);
+      assert.equal(result.isProjected, true);
+
+      // Verify category metrics
+      assert.equal(result.breakdown.spamFiltered.count, 847);
+      assert.equal(result.breakdown.spamFiltered.hoursSaved, 12); // 12 hours
+      assert.equal(result.breakdown.routineReplies.count, 234);
+      assert.equal(result.breakdown.routineReplies.hoursSaved, 15); // 15 hours
+      assert.equal(result.breakdown.hostileShielded.count, 23);
+      assert.equal(result.breakdown.hostileShielded.hoursSaved, 8); // 8 hours
+      assert.equal(result.breakdown.strategicSilence.count, 156);
+      assert.equal(result.breakdown.strategicSilence.hoursSaved, 12); // 12 hours
+      assert.equal(result.breakdown.humanMomentsPreserved.count, 18);
+    });
+
+    it('adapts calculations dynamically when creator customizes hourly rate', () => {
+      const rate100 = calculateTimeSaved([], {}, 100, { useMonthlyProjection: true });
+      assert.equal(rate100.dollarValue, 4700);
+
+      const rate75 = calculateTimeSaved([], {}, 75, { useMonthlyProjection: true });
+      assert.equal(rate75.dollarValue, 3525);
+    });
+
+    it('computes live workspace session metrics accurately from active comments and states', () => {
+      const workspace = createDemoWorkspace();
+      const result = calculateTimeSaved(workspace.comments, workspace.commentStates, 50, { useMonthlyProjection: false });
+
+      assert.ok(result.totalHours >= 0);
+      assert.ok(result.dollarValue >= 0);
+      assert.ok(result.breakdown.spamFiltered.count >= 1);
+      assert.ok(result.breakdown.hostileShielded.count >= 1);
+      assert.ok(result.breakdown.humanMomentsPreserved.count >= 1);
+      assert.equal(result.isProjected, false);
+    });
+
+    it('formats social share templates for Twitter/X and LinkedIn', () => {
+      const templates = generateSocialShareTemplates({
+        totalHours: 47,
+        dollarValue: 2350,
+      });
+
+      assert.ok(templates.twitter.includes('Ghost Guardian saved me 47 hours this month.'));
+      assert.ok(templates.twitter.includes('$2,350'));
+      assert.ok(templates.twitter.includes('ghostguardian.vercel.app'));
+
+      assert.ok(templates.linkedin.includes('I let an AI handle my comments'));
+      assert.ok(templates.linkedin.includes('47 hours saved'));
+      assert.ok(templates.linkedin.includes('$2,350'));
+    });
+
+    it('generates a full markdown attention report for export and downloading', () => {
+      const report = generateTimeSavedReport({
+        creatorName: 'Alex Chen',
+        channelName: 'The Long Signal',
+        totalHours: 47,
+        dollarValue: 2350,
+        hourlyRate: 50,
+      });
+
+      assert.ok(report.includes('# Ghost Guardian — Creator Time Saved & Attention Report'));
+      assert.ok(report.includes('Alex Chen'));
+      assert.ok(report.includes('47 hours'));
+      assert.ok(report.includes('$2,350'));
+      assert.ok(report.includes('Spam Filtered'));
+      assert.ok(report.includes('Hostile Shielded'));
+      assert.ok(report.includes('Human Moments Protected'));
     });
   });
 });

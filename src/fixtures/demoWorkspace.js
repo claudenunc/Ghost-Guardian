@@ -858,6 +858,7 @@ export function createDemoWorkspace() {
       notifyQuestions: true,
       notifySpikes: true,
       notifyWeekly: true,
+      hourlyRate: 50,
     },
     voice: {
       ...demoVoiceProfile,

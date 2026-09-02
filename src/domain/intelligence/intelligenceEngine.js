@@ -20,6 +20,14 @@ import {
   PriorityRank,
 } from '../../components/comments/CommentPriority.js';
 
+export {
+  calculateTimeSaved,
+  TIME_SAVED_RATES,
+  DEFAULT_MONTHLY_STATS,
+  generateSocialShareTemplates,
+  generateTimeSavedReport,
+} from '../analytics/timeSaved.js';
+
 export const SignalType = Object.freeze({
   QUESTION: 'QUESTION',
   REPEATED_REQUEST: 'REPEATED_REQUEST',

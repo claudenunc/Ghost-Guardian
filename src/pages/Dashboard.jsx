@@ -36,6 +36,7 @@ import {
   SectionTitle,
 } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
+import { TimeSavedWidget } from '../components/dashboard';
 import {
   getGuardianSummary,
   getNeedsYouItems,
@@ -160,7 +161,10 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* 2. SECTION: NEEDS YOU */}
+      {/* 2. TIME SAVED VALUE HERO WIDGET */}
+      <TimeSavedWidget />
+
+      {/* 3. SECTION: NEEDS YOU */}
       <section className="space-y-4">
         <SectionTitle
           title="⚠️ Needs You"

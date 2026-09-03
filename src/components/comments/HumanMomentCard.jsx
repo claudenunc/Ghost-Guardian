@@ -54,15 +54,15 @@ export default function HumanMomentCard({ comment, commenter, video }) {
   };
 
   return (
-    <article className="ghost-panel p-5 sm:p-6 transition-all duration-200 border-[#c084fc]/30 bg-gradient-to-b from-[#181a2e]/80 to-[#121422]/95 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+    <article className="ghost-panel p-5 sm:p-6 transition-all duration-200 border-[#FF007A]/25 shadow-[0_0_24px_rgba(255,0,122,0.08),0_8px_32px_rgba(0,0,0,0.6)] bg-[#000000]">
       {/* Header */}
       <CommentHeader comment={comment} commenter={commenter} video={video} />
 
       {/* Human Moment Quiet Spotlight Banner */}
-      <div className="mt-4 rounded-xl border border-[#c084fc]/25 bg-[#c084fc]/10 p-4 space-y-2">
+      <div className="mt-4 rounded-xl border border-[#FF007A]/20 bg-[#0a0a0a] p-4 space-y-2">
         <div className="flex items-center gap-2">
-          <Heart size={16} className="text-[#c084fc]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[#c084fc]">
+          <Heart size={16} className="text-[#FF007A]" />
+          <span className="text-xs font-bold uppercase tracking-wider text-[#FF007A]">
             Human Moment Detected
           </span>
         </div>
@@ -70,7 +70,7 @@ export default function HumanMomentCard({ comment, commenter, video }) {
           {comment.humanMomentContext ||
             'This person may be sharing something personally meaningful, vulnerable, or transformative.'}
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#c084fc]/90">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#FF007A]/80">
           <span>✨ <strong>Consider replying personally.</strong></span>
           <span className="italic text-[#8f97b0]">
             Ghost Guardian will not speak for you here unless you ask.
@@ -79,7 +79,7 @@ export default function HumanMomentCard({ comment, commenter, video }) {
       </div>
 
       {/* Comment Body */}
-      <div className="mt-4 pl-3 border-l-2 border-[#c084fc]/50">
+      <div className="mt-4 pl-3 border-l-2 border-[#FF007A]/40">
         <p className="text-sm sm:text-base text-white leading-relaxed font-normal">
           "{comment.text}"
         </p>
@@ -123,7 +123,7 @@ export default function HumanMomentCard({ comment, commenter, video }) {
               <Button
                 size="sm"
                 onClick={() => setMode('personal')}
-                className="bg-[#c084fc] hover:bg-[#a855f7] text-[#0d0f17] font-semibold"
+                className="border border-[#FF007A]/50 text-[#FF007A] hover:bg-[#FF007A]/10 font-semibold"
               >
                 <MessageCircle size={14} /> Reply Personally
               </Button>
@@ -161,10 +161,10 @@ export default function HumanMomentCard({ comment, commenter, video }) {
 
           {/* Mode: Personal Reply Workspace */}
           {mode === 'personal' && (
-            <div className="space-y-3 rounded-xl border border-[#c084fc]/30 bg-[#0d0f17]/90 p-4 animate-in fade-in duration-200">
+            <div className="space-y-3 rounded-xl border border-[#FF007A]/25 bg-[#080808] p-4 animate-in fade-in duration-200">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                  <MessageCircle size={14} className="text-[#c084fc]" />
+                  <MessageCircle size={14} className="text-[#FF007A]" />
                   Your Personal Human Response
                 </span>
                 <button
@@ -193,7 +193,7 @@ export default function HumanMomentCard({ comment, commenter, video }) {
                     size="sm"
                     onClick={handlePersonalReply}
                     disabled={!personalText.trim()}
-                    className="bg-[#c084fc] hover:bg-[#a855f7] text-[#0d0f17]"
+                    className="border border-[#FF007A]/50 text-[#FF007A] hover:bg-[#FF007A]/10"
                   >
                     <Send size={14} /> Send Personal Reply
                   </Button>

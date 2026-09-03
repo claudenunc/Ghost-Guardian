@@ -61,7 +61,7 @@ export default function AudienceIntelligence() {
   return (
     <div className="space-y-8 animate-in fade-in duration-300 pb-16">
       {/* HERO SECTION */}
-      <div className="ghost-panel ghost-glow p-6 sm:p-8 border-[#c084fc]/30 bg-gradient-to-r from-[#17142b]/95 via-[#131726]/95 to-[#1c1830]/95">
+      <div className="ghost-panel ghost-glow p-6 sm:p-8 border-[#FF007A]/20 bg-[#000000] shadow-[0_0_32px_rgba(255,0,122,0.06)]">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ export default function AudienceIntelligence() {
               return (
                 <div
                   key={c.id}
-                  className="ghost-panel p-4 space-y-2 border-[#c084fc]/30 bg-[#c084fc]/5"
+                  className="ghost-panel p-4 space-y-2 border-[#FF007A]/20 bg-[#000000]"
                 >
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-bold text-white">{person?.displayName || 'User'}</span>
@@ -232,7 +232,7 @@ export default function AudienceIntelligence() {
                     "{c.text}"
                   </p>
                   <div className="flex justify-end pt-1">
-                    <Link to="/app/inbox" className="text-[11px] text-[#c084fc] hover:underline">
+                    <Link to="/app/inbox" className="text-[11px] text-[#FF007A] hover:underline">
                       Open in Inbox →
                     </Link>
                   </div>

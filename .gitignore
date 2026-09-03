@@ -29,3 +29,7 @@ dist-ssr
 data/
 *.sqlite
 
+
+# Agent configuration
+AGENTS.md
+.agents/

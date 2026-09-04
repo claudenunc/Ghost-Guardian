@@ -152,6 +152,7 @@ export default function DataPortability() {
               ref={fileInputRef}
               accept=".json,application/json"
               onChange={handleFileChange}
+              aria-label="Upload Backup JSON File"
               className="hidden"
             />
             <Button

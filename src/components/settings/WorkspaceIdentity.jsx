@@ -81,6 +81,7 @@ export default function WorkspaceIdentity() {
               type="number"
               value={hourlyRate}
               onChange={(e) => setHourlyRate(e.target.value)}
+              aria-label="Creator Hourly Rate in Dollars"
               className="w-full rounded-xl border border-white/10 bg-[#0d0f17] pl-7 pr-3 py-2 text-xs text-white focus:border-[#4de1dc] focus:outline-none"
               placeholder="50"
               min="1"

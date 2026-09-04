@@ -278,16 +278,18 @@ export function Textarea({ value, onChange, placeholder, rows = 3, className = '
   );
 }
 
-export function Switch({ checked, onChange }) {
+export function Switch({ checked, onChange, ariaLabel, className = '', ...props }) {
   return (
     <button
       type="button"
       role="switch"
       aria-checked={checked}
+      aria-label={ariaLabel || props['aria-label'] || 'Toggle setting'}
       onClick={() => onChange && onChange(!checked)}
       className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border border-white/20 transition-colors duration-200 ease-in-out focus:outline-none ${
         checked ? 'bg-[#0A00FF] shadow-[0_0_15px_#0A00FF]' : 'bg-[#0a0a0a]'
-      }`}
+      } ${className}`}
+      {...props}
     >
       <span
         className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-lg ring-0 transition duration-200 ease-in-out ${
@@ -298,7 +300,7 @@ export function Switch({ checked, onChange }) {
   );
 }
 
-export function Slider({ value = [50], max = 100, step = 5, onChange }) {
+export function Slider({ value = [50], max = 100, step = 5, onChange, ariaLabel, className = '', ...props }) {
   const val = value[0] ?? 50;
   return (
     <input
@@ -307,8 +309,10 @@ export function Slider({ value = [50], max = 100, step = 5, onChange }) {
       max={max}
       step={step}
       value={val}
+      aria-label={ariaLabel || props['aria-label'] || 'Adjust slider'}
       onChange={(e) => onChange && onChange(Number(e.target.value))}
-      className="w-full h-1.5 bg-[#141414] rounded-lg appearance-none cursor-pointer accent-[#0A00FF]"
+      className={`w-full h-1.5 bg-[#141414] rounded-lg appearance-none cursor-pointer accent-[#0A00FF] ${className}`}
+      {...props}
     />
   );
 }

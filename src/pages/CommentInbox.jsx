@@ -206,6 +206,7 @@ export default function CommentInbox() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-300 pb-16">
+      <h1 className="sr-only">Comment Inbox</h1>
       {/* Page Title */}
       <SectionTitle
         title="Comment Inbox"
@@ -242,6 +243,7 @@ export default function CommentInbox() {
               value={videoUrlInput}
               onChange={(e) => setVideoUrlInput(e.target.value)}
               placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=... or shorts / youtu.be) or 11-char Video ID"
+              aria-label="YouTube Video URL or Video ID"
               className="w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3.5 py-2 text-xs text-white placeholder:text-[#a0a0a0]/60 focus:border-[#0A00FF] focus:outline-none focus:ring-1 focus:ring-[#0A00FF] font-mono"
             />
           </div>
@@ -313,6 +315,7 @@ export default function CommentInbox() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search comments, users, videos..."
+                aria-label="Search comments"
                 className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/90 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/50 focus:border-[#4de1dc] focus:outline-none"
               />
             </div>
@@ -397,14 +400,16 @@ export default function CommentInbox() {
               </p>
 
               <div className="space-y-1.5 pt-1">
-                <label className="text-[11px] font-mono text-white font-semibold block">
+                <label htmlFor="youtube-api-key-input" className="text-[11px] font-mono text-white font-semibold block">
                   YouTube Data API Key:
                 </label>
                 <input
+                  id="youtube-api-key-input"
                   type="password"
                   value={apiKeyInput}
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="AIzaSy..."
+                  aria-label="YouTube Data API Key"
                   className="w-full rounded-lg border border-white/10 bg-black px-3 py-2 text-xs text-white font-mono focus:border-[#0A00FF] focus:outline-none"
                 />
               </div>

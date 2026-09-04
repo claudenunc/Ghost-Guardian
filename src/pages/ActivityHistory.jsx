@@ -106,6 +106,7 @@ export default function ActivityHistory() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search Journal audit trail..."
+            aria-label="Search Journal audit trail"
             className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/80 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/60 focus:border-[#4de1dc] focus:outline-none"
           />
         </div>

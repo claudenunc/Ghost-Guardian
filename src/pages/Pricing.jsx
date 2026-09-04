@@ -207,6 +207,7 @@ export default function Pricing() {
         </div>
       </header>
 
+      <main>
       {/* MONUMENTAL HERO SECTION */}
       <section className="mx-auto max-w-6xl px-5 pt-16 pb-16 sm:pt-24 text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0A00FF]/15 border border-[#0A00FF]/40 text-xs font-mono font-bold text-[#0A00FF] shadow-[0_0_15px_rgba(10,0,255,0.25)]">
@@ -385,6 +386,7 @@ export default function Pricing() {
                   max="5000"
                   step="50"
                   value={weeklyComments}
+                  aria-label="Weekly Comment Volume"
                   onChange={(e) => setWeeklyComments(Number(e.target.value))}
                   className="w-full h-2 rounded-lg bg-black accent-[#0A00FF] cursor-pointer"
                 />
@@ -409,6 +411,7 @@ export default function Pricing() {
                   max="200"
                   step="5"
                   value={hourlyRate}
+                  aria-label="Creator Hourly Attention Value"
                   onChange={(e) => setHourlyRate(Number(e.target.value))}
                   className="w-full h-2 rounded-lg bg-black accent-[#00FF66] cursor-pointer"
                 />
@@ -646,6 +649,7 @@ export default function Pricing() {
           </p>
         </div>
       </section>
+      </main>
 
       {/* FOOTER */}
       <footer className="border-t border-white/[0.08] bg-[#000000] px-5 py-8 text-center text-xs text-[#a0a0a0] font-mono">

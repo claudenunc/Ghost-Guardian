@@ -171,6 +171,7 @@ export default function Landing() {
         </div>
       </header>
 
+      <main>
       {/* MONUMENTAL HERO SECTION */}
       <section className="relative mx-auto max-w-6xl px-5 pt-20 pb-24 sm:pt-28 sm:pb-32">
         <div className="max-w-4xl space-y-6">
@@ -480,7 +481,9 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* TACTICAL FOOTER */}
+      </main>
+
+      {/* Void Footer */}
       <footer className="border-t border-white/[0.08] bg-[#000000] px-5 py-12 text-xs text-[#a0a0a0]">
         <div className="mx-auto max-w-6xl space-y-10">
           <div className="grid gap-8 grid-cols-2 sm:grid-cols-4 font-mono">

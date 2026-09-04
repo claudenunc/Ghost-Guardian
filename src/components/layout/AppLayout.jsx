@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { NavLink, Outlet, Link } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Inbox,
@@ -16,6 +16,8 @@ import {
   CheckCircle,
   AlertTriangle,
   Info,
+  MoreHorizontal,
+  ChevronRight,
 } from 'lucide-react';
 import { GhostMark, Chip, Button } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
@@ -32,8 +34,15 @@ const navItems = [
   { to: '/app/settings', label: 'Settings', icon: Settings },
 ];
 
+const primaryMobileNav = navItems.slice(0, 4);
+const secondaryMobileNav = navItems.slice(4);
+
 export default function AppLayout() {
   const { settings, updateSettings, comments, stateFor, toast, dispatch } = useGuardian();
+  const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
+  const location = useLocation();
+
+  const isSecondaryActive = secondaryMobileNav.some((item) => location.pathname.startsWith(item.to));
 
   const needsAttention = comments.filter(
     (c) =>
@@ -42,6 +51,16 @@ export default function AppLayout() {
   ).length;
 
   const pendingCount = comments.filter((c) => stateFor(c.id).status === 'pending').length;
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileMoreOpen) {
+        setMobileMoreOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMoreOpen]);
 
   useEffect(() => {
     if (toast) {
@@ -117,6 +136,7 @@ export default function AppLayout() {
               size="sm"
               variant={settings.paused ? 'default' : 'destructive'}
               onClick={togglePause}
+              aria-label={settings.paused ? 'Resume Shield' : 'Pause Shield'}
               className="gap-1.5 shrink-0 font-mono tracking-wider text-[11px]"
             >
               {settings.paused ? <Play size={13} /> : <Pause size={13} />}
@@ -126,7 +146,7 @@ export default function AppLayout() {
         </div>
 
         {/* Tactical Desktop Navigation */}
-        <nav className="mx-auto hidden max-w-7xl gap-1.5 overflow-x-auto px-4 pb-2.5 lg:flex scrollbar-none">
+        <nav className="mx-auto hidden max-w-7xl gap-1.5 overflow-x-auto px-4 pb-2.5 lg:flex scrollbar-none" aria-label="Main navigation">
           {navItems.map(({ to, label, icon: Icon, end }) => (
             <NavLink
               key={to}
@@ -158,14 +178,15 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 z-40 flex w-full justify-around border-t border-white/[0.08] bg-[#000000] px-2 py-2 lg:hidden">
-        {navItems.slice(0, 5).map(({ to, label, icon: Icon, end }) => (
+      <nav className="fixed bottom-0 z-40 flex w-full justify-around border-t border-white/[0.08] bg-[#000000] px-2 py-2 lg:hidden" aria-label="Mobile navigation">
+        {primaryMobileNav.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
             end={end}
+            onClick={() => setMobileMoreOpen(false)}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${
+              `flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 min-h-[44px] min-w-[48px] justify-center text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${
                 isActive ? 'text-[#0A00FF]' : 'text-[#a0a0a0] hover:text-white'
               }`
             }
@@ -174,7 +195,83 @@ export default function AppLayout() {
             <span>{label}</span>
           </NavLink>
         ))}
+
+        {/* Tactical More Button for mobile access to Audience, Analytics, Community, Journal, Settings */}
+        <button
+          type="button"
+          aria-expanded={mobileMoreOpen}
+          aria-label="Toggle tactical operations navigation menu"
+          onClick={() => setMobileMoreOpen(!mobileMoreOpen)}
+          className={`flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 min-h-[44px] min-w-[48px] justify-center text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${
+            mobileMoreOpen || isSecondaryActive ? 'text-[#0A00FF]' : 'text-[#a0a0a0] hover:text-white'
+          }`}
+        >
+          <MoreHorizontal size={18} />
+          <span>More</span>
+        </button>
       </nav>
+
+      {/* Tactical Mobile Menu Sheet */}
+      {mobileMoreOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-150">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/80 transition-opacity"
+            onClick={() => setMobileMoreOpen(false)}
+            aria-hidden="true"
+          />
+
+          {/* Sheet */}
+          <div className="relative z-10 w-full rounded-t-2xl border-t border-white/20 bg-[#050505] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.9)] space-y-4 max-h-[80vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div>
+                <span className="font-display text-sm tracking-[0.2em] uppercase font-bold text-white block">
+                  Tactical Operations
+                </span>
+                <span className="text-[10px] font-mono text-[#a0a0a0]">
+                  Extended Guardian Suite
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileMoreOpen(false)}
+                aria-label="Close extended menu"
+                className="p-2 text-[#a0a0a0] hover:text-white rounded-lg border border-white/10 bg-[#0a0a0a]"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="grid gap-2">
+              {secondaryMobileNav.map(({ to, label, icon: Icon }) => {
+                const isActive = location.pathname.startsWith(to);
+                return (
+                  <NavLink
+                    key={to}
+                    to={to}
+                    onClick={() => setMobileMoreOpen(false)}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
+                      isActive
+                        ? 'bg-[#0a0a0a] border-[#0A00FF] text-white shadow-[0_0_15px_rgba(10,0,255,0.3)]'
+                        : 'border-white/5 bg-[#080808] text-[#a0a0a0] hover:text-white hover:border-white/15'
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0A00FF]/20 text-[#0A00FF]' : 'bg-white/5 text-[#a0a0a0]'}`}>
+                        <Icon size={18} />
+                      </div>
+                      <span className="font-display font-bold uppercase text-xs tracking-wider">
+                        {label}
+                      </span>
+                    </div>
+                    <ChevronRight size={16} className={isActive ? 'text-[#0A00FF]' : 'text-white/20'} />
+                  </NavLink>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Military Command Toast Banner */}
       {toast && (

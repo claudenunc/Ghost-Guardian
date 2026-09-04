@@ -195,6 +195,7 @@ export default function TimeSavedBreakdown({
                     type="number"
                     value={customRate}
                     onChange={(e) => setCustomRate(e.target.value)}
+                    aria-label="Custom Hourly Rate in Dollars"
                     className="w-16 rounded-lg bg-black/50 border border-[#4de1dc] px-2 py-1 text-xs text-white focus:outline-none"
                     min="1"
                     max="1000"
@@ -203,6 +204,7 @@ export default function TimeSavedBreakdown({
                   <button
                     type="button"
                     onClick={handleSaveRate}
+                    aria-label="Save Hourly Rate"
                     className="p-1 rounded bg-[#4de1dc] text-black font-bold hover:bg-[#38cac5] transition-colors"
                   >
                     <Check size={14} />

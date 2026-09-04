@@ -784,6 +784,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Screen-reader only (visually hidden, semantically present) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
 /* Responsive break points */
 @media (min-width: 640px) {
   .sm\:flex-row { flex-direction: row; }

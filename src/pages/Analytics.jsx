@@ -31,6 +31,7 @@ export default function Analytics() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 pb-16">
+      <h1 className="sr-only">Analytics</h1>
       <SectionTitle
         title="Guardian Impact & Attention Analytics"
         subtitle="Transparent evaluation of attention protected, creator cognitive energy saved, and voice calibration quality."

@@ -67,10 +67,11 @@ export default function PolicySimulator() {
       <div className="space-y-3">
         <div className="grid gap-3 sm:grid-cols-[1fr_200px]">
           <div>
-            <label className="text-xs font-semibold text-[#8f97b0] uppercase block mb-1.5">
+            <label htmlFor="simulated-comment-text" className="text-xs font-semibold text-[#8f97b0] uppercase block mb-1.5">
               Simulated Comment Text
             </label>
             <textarea
+              id="simulated-comment-text"
               rows={2}
               value={input}
               onChange={(e) => setInput(e.target.value)}
@@ -80,10 +81,11 @@ export default function PolicySimulator() {
           </div>
 
           <div>
-            <label className="text-xs font-semibold text-[#8f97b0] uppercase block mb-1.5">
+            <label htmlFor="simulated-author-handle" className="text-xs font-semibold text-[#8f97b0] uppercase block mb-1.5">
               Author Handle (Optional)
             </label>
             <input
+              id="simulated-author-handle"
               type="text"
               value={authorHandle}
               onChange={(e) => setAuthorHandle(e.target.value)}

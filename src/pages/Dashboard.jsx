@@ -194,18 +194,19 @@ export default function Dashboard() {
                   key={comment.id}
                   className={`ghost-panel p-5 transition-all ${
                     isHuman
-                      ? 'border-[#c084fc]/40 bg-[#c084fc]/5'
+                      ? 'border-white/15 bg-black'
                       : isThreat
                       ? 'border-[#f87171]/40 bg-[#f87171]/5'
-                      : 'border-white/10'
+                      : 'border-white/10 bg-black'
                   }`}
+                  style={{ backgroundColor: '#000000' }}
                 >
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div className="flex items-center gap-2.5 min-w-0">
                       <div
                         className={`size-8 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 ${
                           isHuman
-                            ? 'bg-[#c084fc]/20 text-[#c084fc]'
+                            ? 'bg-white/10 text-white'
                             : 'bg-[#1e2235] text-[#4de1dc]'
                         }`}
                       >
@@ -236,8 +237,8 @@ export default function Dashboard() {
                         : `⚠️ Guardian Note: ${comment.reasoningSummary}`}
                     </span>
 
-                    <Button asChild size="sm" variant={isHuman ? 'default' : 'outline'}>
-                      <Link to="/app/inbox">Triage in Inbox</Link>
+                    <Button asChild size="sm" variant="outline" className="border-white/20 text-white hover:border-white">
+                      <Link to="/app/inbox" className="text-white hover:text-white">Triage in Inbox</Link>
                     </Button>
                   </div>
                 </div>
@@ -364,39 +365,43 @@ export default function Dashboard() {
         </section>
 
         {/* CONTENT OPPORTUNITY ROADMAP CARD */}
-        <section className="ghost-panel p-6 space-y-4 border-[#4de1dc]/30 bg-gradient-to-br from-[#121b24]/90 to-[#121422]/95">
-          <div className="flex items-center justify-between pb-2 border-b border-white/5">
+        <section
+          className="ghost-panel p-6 space-y-4 border border-white/20 bg-black shadow-[0_0_20px_rgba(255,255,255,0.06)]"
+          style={{ backgroundColor: '#000000' }}
+        >
+          <div className="flex items-center justify-between pb-2 border-b border-white/10">
             <div className="flex items-center gap-2">
-              <Lightbulb size={18} className="text-[#4de1dc]" />
+              <Lightbulb size={18} className="text-white" />
               <h3 className="font-display text-base text-white">Content Opportunity</h3>
             </div>
-            <Chip variant="guardian">Actionable</Chip>
+            <Chip variant="outline" className="text-white border-white/20">Actionable</Chip>
           </div>
 
           <div className="space-y-2 pt-1">
             <span className="text-sm font-bold text-white block">
               "{topOpportunity.title}"
             </span>
-            <p className="text-xs text-[#e4e7f1] leading-relaxed">
+            <p className="text-xs text-[#a0a0a0] leading-relaxed">
               {topOpportunity.evidence}
             </p>
-            <div className="text-[11px] text-[#8f97b0] pt-1">
+            <div className="text-[11px] text-[#a0a0a0] pt-1">
               Suggested: <strong className="text-white">Short Explainer → Deep Dive Episode</strong>
             </div>
           </div>
 
-          <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-[#8f97b0]">
-            <button
-              type="button"
+          <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-[#a0a0a0]">
+            <Button
+              size="sm"
+              variant="outline"
               onClick={() => {
                 updateOpportunityStatus(topOpportunity.id, 'saved');
                 showToast('Opportunity saved to Content Roadmap.', 'success');
               }}
-              className="inline-flex items-center gap-1.5 text-xs text-[#4de1dc] hover:underline cursor-pointer"
+              className="text-xs border-white/20 text-white hover:border-white"
             >
               <FolderPlus size={13} /> Save to Roadmap
-            </button>
-            <Link to="/app/audience" className="text-[#4de1dc] hover:underline">
+            </Button>
+            <Link to="/app/audience" className="text-xs text-white hover:underline transition-colors">
               Explore All Opportunities →
             </Link>
           </div>

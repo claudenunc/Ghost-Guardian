@@ -205,7 +205,7 @@ export default function CommentInbox() {
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 pb-16">
+    <div className="space-y-6 animate-in fade-in duration-300 pb-28 sm:pb-16">
       <h1 className="sr-only">Comment Inbox</h1>
       {/* Page Title */}
       <SectionTitle

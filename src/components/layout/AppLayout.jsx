@@ -76,7 +76,7 @@ export default function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-black pb-28 lg:pb-12 text-white">
+    <div className="min-h-screen bg-black pb-28 lg:pb-12 text-white overflow-x-hidden">
       {/* Classified Military Tech Command Header */}
       <header className="sticky top-0 z-30 border-b border-white/[0.08] bg-[#000000] shadow-[0_4px_30px_rgba(0,0,0,0.95)]">
         {/* Tactical Telemetry Strip */}
@@ -178,7 +178,11 @@ export default function AppLayout() {
       </main>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="fixed bottom-0 z-40 flex w-full justify-around border-t border-white/[0.08] bg-[#000000] px-2 py-2 lg:hidden" aria-label="Mobile navigation">
+      <nav
+        className="fixed bottom-0 z-40 flex w-full justify-around border-t border-white/[0.08] bg-black px-2 py-2 lg:hidden shadow-[0_-4px_25px_rgba(0,0,0,1)]"
+        style={{ backgroundColor: '#000000' }}
+        aria-label="Mobile navigation"
+      >
         {primaryMobileNav.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
@@ -187,7 +191,7 @@ export default function AppLayout() {
             onClick={() => setMobileMoreOpen(false)}
             className={({ isActive }) =>
               `flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 min-h-[44px] min-w-[48px] justify-center text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${
-                isActive ? 'text-[#0A00FF]' : 'text-[#a0a0a0] hover:text-white'
+                isActive ? 'text-white' : 'text-[#a0a0a0] hover:text-white'
               }`
             }
           >
@@ -203,7 +207,7 @@ export default function AppLayout() {
           aria-label="Toggle tactical operations navigation menu"
           onClick={() => setMobileMoreOpen(!mobileMoreOpen)}
           className={`flex flex-col items-center gap-1 rounded-lg px-3 py-1.5 min-h-[44px] min-w-[48px] justify-center text-[10px] font-display font-bold uppercase tracking-wider transition-colors ${
-            mobileMoreOpen || isSecondaryActive ? 'text-[#0A00FF]' : 'text-[#a0a0a0] hover:text-white'
+            mobileMoreOpen || isSecondaryActive ? 'text-white' : 'text-[#a0a0a0] hover:text-white'
           }`}
         >
           <MoreHorizontal size={18} />
@@ -216,13 +220,17 @@ export default function AppLayout() {
         <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-150">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/80 transition-opacity"
+            className="fixed inset-0 bg-black/90 transition-opacity"
+            style={{ backgroundColor: 'rgba(0, 0, 0, 0.85)' }}
             onClick={() => setMobileMoreOpen(false)}
             aria-hidden="true"
           />
 
           {/* Sheet */}
-          <div className="relative z-10 w-full rounded-t-2xl border-t border-white/20 bg-[#050505] p-5 shadow-[0_-10px_40px_rgba(0,0,0,0.9)] space-y-4 max-h-[80vh] overflow-y-auto">
+          <div
+            className="relative z-10 w-full rounded-t-2xl border-t border-white/20 bg-[#0a0a0a] p-5 shadow-[0_-10px_40px_rgba(0,0,0,1)] space-y-4 max-h-[80vh] overflow-y-auto"
+            style={{ backgroundColor: '#0a0a0a' }}
+          >
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
                 <span className="font-display text-sm tracking-[0.2em] uppercase font-bold text-white block">

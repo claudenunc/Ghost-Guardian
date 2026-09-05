@@ -148,14 +148,14 @@ export default function PolicyMatrix() {
                 onClick={() => toggleExpand(item.category)}
                 className="flex flex-wrap items-center justify-between gap-3 cursor-pointer select-none"
               >
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-2 min-w-0">
                   <ClassificationChip value={item.category} />
                   <RiskChip risk={item.risk} />
                   <span className="font-semibold text-xs sm:text-sm text-white">
                     {item.label}
                   </span>
                   {item.locked && (
-                    <span className="flex items-center gap-1 text-[10px] text-[#818cf8] bg-[#818cf8]/10 px-2 py-0.5 rounded-md font-semibold">
+                    <span className="flex items-center gap-1 text-[10px] text-white/80 bg-white/10 px-2 py-0.5 rounded-md font-semibold">
                       <Lock size={11} /> Locked Guardrail
                     </span>
                   )}

@@ -145,16 +145,25 @@ export default function TimeSavedBreakdown({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl border border-[#4de1dc]/30 bg-[#0f121d] shadow-[0_0_60px_rgba(77,225,220,0.18)] overflow-hidden">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 animate-in fade-in duration-200"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.96)' }}
+    >
+      <div
+        className="relative w-full max-w-2xl max-h-[92vh] flex flex-col rounded-3xl border border-white/20 bg-[#0a0a0a] shadow-[0_0_60px_rgba(0,0,0,1)] overflow-hidden"
+        style={{ backgroundColor: '#0a0a0a' }}
+      >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-white/10 bg-gradient-to-r from-[#141829] via-[#161a2e] to-[#141829]">
+        <div
+          className="flex items-center justify-between px-6 sm:px-8 py-5 border-b border-white/10 bg-[#000000]"
+          style={{ backgroundColor: '#000000' }}
+        >
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="p-1.5 rounded-lg bg-[#4de1dc]/15 text-[#4de1dc]">
+              <span className="p-1.5 rounded-lg bg-white/10 text-white">
                 <Clock size={16} />
               </span>
-              <span className="text-xs font-bold uppercase tracking-wider text-[#4de1dc]">
+              <span className="text-xs font-bold uppercase tracking-wider text-white">
                 Attention Economics
               </span>
             </div>
@@ -236,14 +245,15 @@ export default function TimeSavedBreakdown({
             {categories.map((cat) => (
               <div
                 key={cat.key}
-                className={`p-4 rounded-2xl bg-[#121522]/90 border transition-all ${cat.border}`}
+                className="p-4 rounded-2xl bg-[#000000] border border-white/10 transition-all"
+                style={{ backgroundColor: '#000000' }}
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3">
                     <span className="text-xl">{cat.icon}</span>
                     <div>
                       <h4 className="font-display text-sm text-white font-bold">{cat.title}</h4>
-                      <p className="text-xs text-[#8f97b0] mt-0.5">{cat.display}</p>
+                      <p className="text-xs text-[#a0a0a0] mt-0.5">{cat.display}</p>
                     </div>
                   </div>
 
@@ -251,28 +261,31 @@ export default function TimeSavedBreakdown({
                     <span className={`text-base font-display font-bold ${cat.accent}`}>
                       {cat.hours} hours
                     </span>
-                    <span className="text-[10px] text-[#8f97b0] block">
+                    <span className="text-[10px] text-[#a0a0a0] block">
                       ~${Math.round(cat.hours * rate).toLocaleString()} value
                     </span>
                   </div>
                 </div>
 
-                <p className="mt-2.5 pt-2.5 border-t border-white/5 text-[11px] text-[#8f97b0] leading-relaxed">
+                <p className="mt-2.5 pt-2.5 border-t border-white/5 text-[11px] text-[#a0a0a0] leading-relaxed">
                   {cat.detail}
                 </p>
               </div>
             ))}
 
             {/* Human Moments Protected Row */}
-            <div className="p-4 rounded-2xl bg-[#19142e]/60 border border-[#c084fc]/30 flex items-center justify-between gap-3">
+            <div
+              className="p-4 rounded-2xl bg-[#000000] border border-white/15 flex items-center justify-between gap-3"
+              style={{ backgroundColor: '#000000' }}
+            >
               <div className="flex items-center gap-3">
                 <span className="text-xl">🤍</span>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-display text-sm text-white font-bold">Human moments protected</h4>
-                    <Chip variant="human" className="text-[10px]">Priceless</Chip>
+                    <Chip variant="outline" className="text-[10px] text-white">Priceless</Chip>
                   </div>
-                  <p className="text-xs text-[#c084fc] mt-0.5">{humanMoments.display}</p>
+                  <p className="text-xs text-white/80 mt-0.5">{humanMoments.display}</p>
                 </div>
               </div>
               <div className="text-right shrink-0">

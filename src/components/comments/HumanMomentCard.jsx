@@ -54,32 +54,38 @@ export default function HumanMomentCard({ comment, commenter, video }) {
   };
 
   return (
-    <article className="ghost-panel p-5 sm:p-6 transition-all duration-200 border-[#FF007A]/25 shadow-[0_0_24px_rgba(255,0,122,0.08),0_8px_32px_rgba(0,0,0,0.6)] bg-[#000000]">
+    <article
+      className="ghost-panel p-5 sm:p-6 transition-all duration-200 border border-white/15 shadow-[0_0_24px_rgba(0,0,0,0.8)] bg-black"
+      style={{ backgroundColor: '#000000' }}
+    >
       {/* Header */}
       <CommentHeader comment={comment} commenter={commenter} video={video} />
 
       {/* Human Moment Quiet Spotlight Banner */}
-      <div className="mt-4 rounded-xl border border-[#FF007A]/20 bg-[#0a0a0a] p-4 space-y-2">
+      <div
+        className="mt-4 rounded-xl border border-white/15 bg-black p-4 space-y-2"
+        style={{ backgroundColor: '#000000' }}
+      >
         <div className="flex items-center gap-2">
-          <Heart size={16} className="text-[#FF007A]" />
-          <span className="text-xs font-bold uppercase tracking-wider text-[#FF007A]">
+          <Heart size={16} className="text-white" />
+          <span className="text-xs font-bold uppercase tracking-wider text-white">
             Human Moment Detected
           </span>
         </div>
-        <p className="text-xs text-[#e4e7f1] leading-relaxed">
+        <p className="text-xs text-[#a0a0a0] leading-relaxed">
           {comment.humanMomentContext ||
             'This person may be sharing something personally meaningful, vulnerable, or transformative.'}
         </p>
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#FF007A]/80">
-          <span>✨ <strong>Consider replying personally.</strong></span>
-          <span className="italic text-[#8f97b0]">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] text-[#a0a0a0]">
+          <span>✨ <strong className="text-white">Consider replying personally.</strong></span>
+          <span className="italic text-[#a0a0a0]">
             Ghost Guardian will not speak for you here unless you ask.
           </span>
         </div>
       </div>
 
       {/* Comment Body */}
-      <div className="mt-4 pl-3 border-l-2 border-[#FF007A]/40">
+      <div className="mt-4 pl-3 border-l-2 border-white/30">
         <p className="text-sm sm:text-base text-white leading-relaxed font-normal">
           "{comment.text}"
         </p>
@@ -90,7 +96,7 @@ export default function HumanMomentCard({ comment, commenter, video }) {
 
       {/* Private Note Display if added */}
       {privateNote && (
-        <div className="mt-3 rounded-xl border border-white/10 bg-[#0d0f17]/90 p-3 text-xs text-[#e4e7f1] flex items-start gap-2">
+        <div className="mt-3 rounded-xl border border-white/10 bg-[#0a0a0a] p-3 text-xs text-[#e4e7f1] flex items-start gap-2">
           <StickyNote size={14} className="text-[#fbbf24] shrink-0 mt-0.5" />
           <div>
             <span className="text-[10px] uppercase font-bold text-[#fbbf24] block">
@@ -122,8 +128,9 @@ export default function HumanMomentCard({ comment, commenter, video }) {
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
+                variant="outline"
                 onClick={() => setMode('personal')}
-                className="border border-[#FF007A]/50 text-[#FF007A] hover:bg-[#FF007A]/10 font-semibold"
+                className="font-semibold text-white border-white/25 hover:border-white hover:bg-white/10"
               >
                 <MessageCircle size={14} /> Reply Personally
               </Button>

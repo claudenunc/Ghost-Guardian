@@ -85,9 +85,9 @@ export default function GuardianRules() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 pb-16">
+    <div className="space-y-8 animate-in fade-in duration-300 pb-16 overflow-x-hidden w-full max-w-full">
       {/* 1. HERO SECTION */}
-      <div className="ghost-panel ghost-glow p-6 sm:p-8 border-[#4de1dc]/30 bg-gradient-to-r from-[#141829]/95 via-[#131726]/95 to-[#1c1830]/95">
+      <div className="ghost-panel ghost-glow p-6 sm:p-8 border-white/15 bg-black max-w-full">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
@@ -215,7 +215,7 @@ export default function GuardianRules() {
       </section>
 
       {/* 3. POLICY STUDIO TAB NAVIGATION */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto">
+      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-x-auto max-w-full scrollbar-none">
         {[
           { id: 'matrix', label: '2. Category Policy Matrix', icon: Sliders },
           { id: 'simulator', label: '3. "What Will Happen?" Simulator', icon: Sparkles },

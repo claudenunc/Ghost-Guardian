@@ -21,12 +21,12 @@ export default function CommentHeader({ comment, commenter, video }) {
   return (
     <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
       {/* Left: Author identity & context */}
-      <div className="flex items-center gap-3 min-w-0 flex-1">
+      <div className="flex items-center gap-3 min-w-0 flex-1 w-full">
         <div
           className={`size-10 rounded-xl flex items-center justify-center font-bold text-xs shrink-0 overflow-hidden transition-colors ${
             isHuman
-              ? 'bg-[#FF007A]/10 text-[#FF007A] border border-[#FF007A]/30 shadow-[0_0_12px_rgba(255,0,122,0.25)]'
-              : 'bg-[#0a0a0a] border border-white/10 text-[#0A00FF]'
+              ? 'bg-white/10 text-white border border-white/20'
+              : 'bg-[#0a0a0a] border border-white/10 text-white'
           }`}
         >
           {comment.authorAvatar ? (
@@ -37,15 +37,15 @@ export default function CommentHeader({ comment, commenter, video }) {
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <span className="text-sm font-bold text-white truncate max-w-[150px] sm:max-w-[220px]">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0 w-full">
+            <span className="text-sm font-bold text-white truncate max-w-[110px] sm:max-w-[200px]">
               {commenter?.displayName || comment.author || 'Community Member'}
             </span>
-            <span className="text-xs text-[#a0a0a0] font-mono truncate max-w-[100px] sm:max-w-[160px]">
+            <span className="text-xs text-[#a0a0a0] font-mono truncate max-w-[85px] sm:max-w-[150px]">
               {commenter?.handle || comment.authorHandle || (comment.platform === 'youtube' ? 'YouTube' : '')}
             </span>
             {commenter?.category === 'returning' && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-[#0A00FF]/10 px-2 py-0.5 text-[10px] font-medium text-[#0A00FF] border border-[#0A00FF]/25 shrink-0">
+              <span className="inline-flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-medium text-white border border-white/20 shrink-0">
                 <UserCheck size={10} /> Returning ({commenter.episodesParticipated || 0} eps)
               </span>
             )}
@@ -56,20 +56,20 @@ export default function CommentHeader({ comment, commenter, video }) {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#8f97b0] mt-0.5">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-[#a0a0a0] mt-0.5 min-w-0 w-full">
             <span className="shrink-0">{timeString}</span>
             {video && (
-              <span className="truncate max-w-[140px] sm:max-w-xs" title={video.title}>
-                · on <span className="text-[#e4e7f1]">{video.title}</span>
+              <span className="truncate max-w-[110px] sm:max-w-xs" title={video.title}>
+                · on <span className="text-white">{video.title}</span>
               </span>
             )}
             {comment.likes > 0 && (
-              <span className="inline-flex items-center gap-1 text-[#e4e7f1] shrink-0">
+              <span className="inline-flex items-center gap-1 text-white shrink-0">
                 · 👍 {comment.likes.toLocaleString()}
               </span>
             )}
             {comment.replies > 0 && (
-              <span className="inline-flex items-center gap-1 text-[#8f97b0] shrink-0">
+              <span className="inline-flex items-center gap-1 text-[#a0a0a0] shrink-0">
                 · 💬 {comment.replies} replies
               </span>
             )}
@@ -78,7 +78,7 @@ export default function CommentHeader({ comment, commenter, video }) {
       </div>
 
       {/* Right: Semantic signals & metadata — wraps below on mobile */}
-      <div className="flex flex-wrap items-center gap-1.5 pl-[52px] sm:pl-0">
+      <div className="flex flex-wrap items-center gap-1.5 pl-[52px] sm:pl-0 min-w-0">
         {isHuman && <HumanMomentChip />}
         <ClassificationChip value={comment.classification} />
         <RiskChip risk={comment.risk} />

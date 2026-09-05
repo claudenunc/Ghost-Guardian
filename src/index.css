@@ -109,6 +109,9 @@ html {
   color-scheme: dark;
   scroll-behavior: smooth;
   background-color: #000000;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
 }
 
 body {
@@ -120,11 +123,23 @@ body {
   min-height: 100vh;
   line-height: 1.5;
   letter-spacing: -0.01em;
+  overflow-x: hidden;
+  max-width: 100vw;
+  width: 100%;
   background-image: 
     radial-gradient(1px 1px at 25px 25px, rgba(255, 255, 255, 0.025), transparent),
     radial-gradient(1px 1px at 75px 75px, rgba(255, 255, 255, 0.015), transparent);
   background-size: 80px 80px;
   background-attachment: fixed;
+}
+
+/* Link reset to prevent unwanted browser purple/visited states */
+a,
+a:visited,
+button a,
+button a:visited {
+  color: inherit;
+  text-decoration: none;
 }
 
 /* Headings */
@@ -380,6 +395,8 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Plasma Text Tokens */
 .text-plasma-blue,
+.text-\[\#0A00FF\],
+.text-\[\#0a00ff\],
 .text-\[\#4de1dc\],
 .text-\[\#a5f3fc\] {
   color: #0A00FF !important;
@@ -432,7 +449,23 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .text-\[\#0d0f17\] { color: #000000 !important; }
 
 /* Backgrounds — STRICT PURGE OF BLUE-GRAY & GLASSMORPHISM */
-.bg-black { background-color: #000000 !important; }
+.bg-black,
+.bg-\[\#000000\] {
+  background-color: #000000 !important;
+}
+
+.bg-\[\#050505\] { background-color: #050505 !important; }
+.bg-\[\#080808\] { background-color: #080808 !important; }
+.bg-\[\#0a0a0a\] { background-color: #0a0a0a !important; }
+.bg-\[\#0f121d\] { background-color: #000000 !important; }
+
+.bg-black\/95,
+.bg-black\/90,
+.bg-black\/80,
+.bg-black\/75 {
+  background-color: rgba(0, 0, 0, 0.95) !important;
+}
+
 .bg-\[\#0d0f17\],
 .bg-\[\#0d0f17\]\/90,
 .bg-\[\#141724\],

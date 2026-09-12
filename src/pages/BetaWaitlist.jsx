@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import { GhostMark, Button } from '../components/guardian/atoms';
 import { ArrowRight, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
@@ -10,7 +10,22 @@ const supabase = (supabaseUrl && supabaseAnonKey)
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
+const BYPASS_KEY = 'ghost_guardian_founder_access';
+const BYPASS_CODE = 'ENVY2026';
+
 export default function BetaWaitlist() {
+  const navigate = useNavigate();
+
+  // Secret bypass: ?access=ENVY2026 → skip gate, go to /app
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('access') === BYPASS_CODE) {
+      localStorage.setItem(BYPASS_KEY, 'true');
+    }
+    if (localStorage.getItem(BYPASS_KEY) === 'true') {
+      navigate('/app', { replace: true });
+    }
+  }, [navigate]);
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [channelUrl, setChannelUrl] = useState('');

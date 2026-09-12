@@ -153,10 +153,14 @@ export function applyClassification(comment, aiResult) {
 /** True when Guardian may ask the AI for a draft reply. */
 export function shouldDraftFor(comment) {
   if (!comment) return false;
-  if (PROTECTED.has(comment.classification) || comment.signals?.humanMoment) return false;
-  if (NEVER_DRAFT.has(comment.classification)) return false;
+  const cls = String(comment.classification || '').toUpperCase();
+  // Never draft for crisis/sensitive, hostile, or anything flagged for a human.
+  if (PROTECTED.has(comment.classification) || PROTECTED.has(cls) || comment.signals?.humanMoment) return false;
+  if (NEVER_DRAFT.has(comment.classification) || NEVER_DRAFT.has(cls)) return false;
   if (comment.requiresHumanReview) return false;
-  return comment.recommendedAction === 'draft';
+  // Draft for everything else (praise, questions, general comments, criticism…),
+  // regardless of the rule engine's exact recommendedAction wording.
+  return true;
 }
 
 /** Runs `worker` over `items` with at most `limit` in flight. Failures never stop the batch. */

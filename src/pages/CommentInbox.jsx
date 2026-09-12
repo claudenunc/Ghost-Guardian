@@ -7,6 +7,8 @@ import {
   Download,
   Loader2,
   PlayCircle,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { Button, EmptyState, SectionTitle } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
@@ -63,6 +65,13 @@ export default function CommentInbox() {
   const [videosError, setVideosError] = useState(null);
   const [connecting, setConnecting] = useState(false);
   const [importingVideoId, setImportingVideoId] = useState(null);
+  const [pickerOpen, setPickerOpen] = useState(true);
+
+  // Videos not yet imported (imported ones drop out of the picker).
+  const availableVideos = useMemo(
+    () => myVideos.filter((v) => !videos.some((iv) => String(iv.id) === String(v.videoId))),
+    [myVideos, videos]
+  );
 
   const loadMyVideos = async () => {
     setLoadingVideos(true);
@@ -183,6 +192,8 @@ export default function CommentInbox() {
     setImportingVideoId(video.videoId);
     try {
       await ingestVideo(video.videoId, video.title);
+      // Collapse the picker so the imported comments are immediately visible.
+      setPickerOpen(false);
     } finally {
       setImportingVideoId(null);
     }
@@ -325,39 +336,53 @@ export default function CommentInbox() {
 
       {/* Your Videos — pick one to import its comments (connected channels) */}
       <div className="rounded-xl border border-white/10 bg-[#050505] p-4 sm:p-5 space-y-3.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span className="flex size-7 items-center justify-center rounded-lg bg-[#0200F1]/15 text-[#0200F1] border border-[#0200F1]/30">
+        <div className="flex items-center justify-between gap-2 min-w-0">
+          <button
+            type="button"
+            onClick={() => connection.connected && setPickerOpen((o) => !o)}
+            className="flex items-center gap-2.5 min-w-0 text-left cursor-pointer"
+          >
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[#0200F1]/15 text-[#0200F1] border border-[#0200F1]/30 shrink-0">
               <PlayCircle size={14} />
             </span>
-            <div>
+            <div className="min-w-0">
               <span className="font-display text-xs font-bold uppercase tracking-widest text-white block">
-                Your Videos
+                Your Videos{connection.connected && availableVideos.length ? ` (${availableVideos.length})` : ''}
               </span>
-              <span className="text-[11px] text-[#a0a0a0]">
+              <span className="text-[11px] text-[#a0a0a0] block truncate">
                 {connection.connected
-                  ? <>Pick a video to import its comments{connection.channelTitle ? ` from ${connection.channelTitle}` : ''}.</>
+                  ? 'Pick a video to import its comments.'
                   : 'Connect your channel to load your videos automatically.'}
               </span>
             </div>
-          </div>
+          </button>
           {connection.connected && (
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={loadMyVideos}
-              disabled={loadingVideos}
-              className="shrink-0 gap-1.5"
-            >
-              {loadingVideos ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
-              Refresh
-            </Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={loadMyVideos}
+                disabled={loadingVideos}
+                className="gap-1.5"
+              >
+                {loadingVideos ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
+              <button
+                type="button"
+                onClick={() => setPickerOpen((o) => !o)}
+                aria-label={pickerOpen ? 'Hide videos' : 'Show videos'}
+                className="p-2 rounded-lg text-[#a0a0a0] hover:text-white hover:bg-white/5 cursor-pointer"
+              >
+                {pickerOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+            </div>
           )}
         </div>
 
         {!connection.connected ? (
           <div className="rounded-lg border border-white/[0.08] bg-[#000000] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <p className="text-xs text-[#a0a0a0] leading-relaxed max-w-lg">
+            <p className="text-xs text-[#a0a0a0] leading-relaxed">
               Authorize Ghost Guardian on your YouTube channel to see every video here and
               publish approved replies directly. Nothing posts without your approval.
             </p>
@@ -366,7 +391,7 @@ export default function CommentInbox() {
               Connect YouTube
             </Button>
           </div>
-        ) : loadingVideos ? (
+        ) : !pickerOpen ? null : loadingVideos ? (
           <div className="flex items-center gap-2 text-xs text-[#a0a0a0] py-6 justify-center">
             <Loader2 size={16} className="animate-spin" /> Loading your videos…
           </div>
@@ -374,13 +399,15 @@ export default function CommentInbox() {
           <div className="rounded-lg border border-[#FF1400]/30 bg-[#FF1400]/10 p-3 text-xs text-[#FF1400]">
             {videosError}
           </div>
-        ) : myVideos.length === 0 ? (
+        ) : availableVideos.length === 0 ? (
           <p className="text-xs text-[#a0a0a0] py-4 text-center">
-            No videos found on your channel yet.
+            {myVideos.length === 0
+              ? 'No videos found on your channel yet.'
+              : 'All your videos are imported. Tap Refresh to check for new ones.'}
           </p>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {myVideos.map((video) => {
+            {availableVideos.map((video) => {
               const importing = importingVideoId === video.videoId;
               return (
                 <button

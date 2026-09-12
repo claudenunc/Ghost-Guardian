@@ -672,6 +672,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .grow { flex-grow: 1; }
 .flex-1 { flex: 1 1 0%; }
 
+/* Min-width / word-break — required for truncation inside flex rows */
+.min-w-0 { min-width: 0; }
+.break-words { overflow-wrap: break-word; word-break: break-word; }
+.break-all { word-break: break-all; }
+.whitespace-nowrap { white-space: nowrap; }
+
+/* Arbitrary max-widths used in comment/inbox layouts (mobile-safe caps) */
+.max-w-\[85px\]  { max-width: 85px; }
+.max-w-\[110px\] { max-width: 110px; }
+.max-w-\[150px\] { max-width: 150px; }
+.max-w-\[200px\] { max-width: 200px; }
+.max-w-\[260px\] { max-width: 260px; }
+
 /* Grid Columns */
 .grid-cols-1 { grid-template-columns: repeat(1, minmax(0, 1fr)); }
 .grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }

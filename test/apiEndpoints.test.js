@@ -98,6 +98,25 @@ describe('Ghost Guardian Server-Side API Endpoints & Security', () => {
       assert.match(res.body.error, /commentText is required/i);
     });
 
+    it('hard blocks response generation for SENSITIVE_CRITICAL, SENSITIVE, and THREAT with 400', async () => {
+      const blockedClassifications = ['SENSITIVE_CRITICAL', 'SENSITIVE', 'THREAT', 'sensitive_critical', 'sensitive', 'threat'];
+
+      for (const classification of blockedClassifications) {
+        const { req, res } = createMockHttp({
+          method: 'POST',
+          url: '/api/generate-response',
+          body: { commentText: 'Test comment content', commentClassification: classification },
+        });
+
+        await handleGenerateResponse(req, res);
+        assert.equal(res.statusCode, 400, `Expected 400 for ${classification}`);
+        assert.equal(
+          res.body.error,
+          'Ghost Guardian does not generate responses to crisis or threat comments. Please respond personally.'
+        );
+      }
+    });
+
     it('returns 500 with clear message if OPENAI_API_KEY is not configured', async () => {
       delete process.env.OPENAI_API_KEY;
       delete process.env.LLM_API_KEY;

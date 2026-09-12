@@ -6,10 +6,12 @@ export const Category = Object.freeze({
   HUMOR: 'HUMOR',
   TROLLING: 'TROLLING',
   HARASSMENT: 'HARASSMENT',
+  HATE: 'hate',
   THREAT: 'THREAT',
   SPAM: 'SPAM',
   SCAM: 'SCAM',
   SENSITIVE: 'SENSITIVE',
+  SENSITIVE_CRITICAL: 'sensitive_critical',
   UNKNOWN: 'UNKNOWN',
 });
 

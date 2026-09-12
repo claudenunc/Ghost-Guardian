@@ -59,6 +59,14 @@ export async function handleGenerateResponse(req, res, { body = null } = {}) {
 
     const { commentText, commentClassification, creatorVoiceProfile = {} } = payload || {};
 
+    const normalizedClassification = String(commentClassification || '').trim().toUpperCase();
+    if (['SENSITIVE_CRITICAL', 'SENSITIVE', 'THREAT'].includes(normalizedClassification)) {
+      return sendJson(400, {
+        error: 'Ghost Guardian does not generate responses to crisis or threat comments. Please respond personally.',
+        message: 'Ghost Guardian does not generate responses to crisis or threat comments. Please respond personally.',
+      });
+    }
+
     if (!commentText || !commentText.trim()) {
       return sendJson(400, { error: 'commentText is required.' });
     }

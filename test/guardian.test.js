@@ -596,6 +596,33 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       assert.equal(humanMoment.finalAction, RecommendedAction.HUMAN_REVIEW);
       assert.equal(humanMoment.requiresHumanReview, true);
     });
+
+    it('shields HATE comments mirroring HARASSMENT and escalates when uncertain', () => {
+      assert.equal(Category.HATE, 'hate');
+      const hateEvaluation = evaluateCommentPolicy('Attacking your identity', Category.HATE);
+      assert.equal(hateEvaluation.finalAction, RecommendedAction.HUMAN_REVIEW);
+      assert.equal(hateEvaluation.strategy, 'protect');
+      assert.equal(hateEvaluation.requiresHumanReview, true);
+
+      // Uncertain action escalates
+      const uncertainHate = evaluateCommentPolicy('Attacking your identity', Category.HATE, { uncertain: true });
+      assert.equal(uncertainHate.finalAction, RecommendedAction.ESCALATE);
+      assert.equal(uncertainHate.strategy, 'escalate');
+      assert.equal(uncertainHate.requiresHumanReview, true);
+    });
+
+    it('enforces requiresHumanReview and urgencyFlag for SENSITIVE_CRITICAL regardless of mode', () => {
+      assert.equal(Category.SENSITIVE_CRITICAL, 'sensitive_critical');
+      const criticalResult = evaluateCommentPolicy(
+        'Immediate crisis distress',
+        Category.SENSITIVE_CRITICAL,
+        { policy: { mode: 'autopilot', categoryPolicies: { [Category.SENSITIVE_CRITICAL]: { action: PolicyAction.REPLY } } } }
+      );
+
+      assert.equal(criticalResult.requiresHumanReview, true);
+      assert.equal(criticalResult.urgencyFlag, true);
+      assert.equal(criticalResult.finalAction, RecommendedAction.HUMAN_REVIEW);
+    });
   });
 
   describe('Pass 7: Workspace Portability, Export/Import & Operational Contracts', () => {

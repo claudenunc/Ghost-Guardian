@@ -34,10 +34,12 @@ export const defaultGuardianPolicy = {
     [Category.HUMOR]: { action: PolicyAction.REPLY, condition: 'Playful wit without punching down', uncertainAction: PolicyAction.HUMAN_REVIEW },
     [Category.TROLLING]: { action: PolicyAction.SILENCE, condition: 'Repeated provocation without substance', uncertainAction: PolicyAction.SILENCE },
     [Category.HARASSMENT]: { action: PolicyAction.SHIELD, condition: 'Direct abuse or insults; buffer in Shield Vault', uncertainAction: PolicyAction.HUMAN_REVIEW },
+    [Category.HATE]: { action: PolicyAction.SHIELD, condition: 'Direct abuse or hate speech; buffer in Shield Vault', uncertainAction: PolicyAction.ESCALATE },
     [Category.THREAT]: { action: PolicyAction.ESCALATE, condition: 'Physical safety or doxxing threats; immediate quarantine', uncertainAction: PolicyAction.ESCALATE },
     [Category.SPAM]: { action: PolicyAction.SILENCE, condition: 'Commercial promotion or crypto links', uncertainAction: PolicyAction.SILENCE },
     [Category.SCAM]: { action: PolicyAction.SHIELD, condition: 'Financial or identity deception attempts', uncertainAction: PolicyAction.HUMAN_REVIEW },
     [Category.SENSITIVE]: { action: PolicyAction.HUMAN_REVIEW, condition: 'Personal emotional disclosures or vulnerability', uncertainAction: PolicyAction.HUMAN_REVIEW },
+    [Category.SENSITIVE_CRITICAL]: { action: PolicyAction.HUMAN_REVIEW, condition: 'Acute crisis or critical vulnerability requiring urgent human care', uncertainAction: PolicyAction.ESCALATE },
     [Category.UNKNOWN]: { action: PolicyAction.HUMAN_REVIEW, condition: 'Uncertain intent; request creator guidance', uncertainAction: PolicyAction.HUMAN_REVIEW },
   },
   keywordShields: [
@@ -105,6 +107,7 @@ export const policyPresets = {
         ...defaultGuardianPolicy.categoryPolicies,
         [Category.TROLLING]: { action: PolicyAction.SILENCE, condition: 'Immediate silence on bad-faith bait', uncertainAction: PolicyAction.SILENCE },
         [Category.HARASSMENT]: { action: PolicyAction.HIDE, condition: 'Auto-hide aggressive insults', uncertainAction: PolicyAction.HIDE },
+        [Category.HATE]: { action: PolicyAction.HIDE, condition: 'Auto-hide aggressive hate speech', uncertainAction: PolicyAction.ESCALATE },
         [Category.SPAM]: { action: PolicyAction.HIDE, condition: 'Immediate removal of promotional spam', uncertainAction: PolicyAction.HIDE },
       },
     },
@@ -126,7 +129,8 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
 
   // STEP 1: SAFETY (Precedence Level 1 - Absolute Highest)
   const isThreat = category === Category.THREAT || /kill you|hurt you|find where you live|watch your back/i.test(normalizedText);
-  const isSevereHarassment = category === Category.HARASSMENT || /piece of shit|kill yourself|subhuman/i.test(normalizedText);
+  const isSevereHarassment = category === Category.HARASSMENT || category === Category.HATE || /piece of shit|kill yourself|subhuman/i.test(normalizedText);
+  const isSensitiveCritical = category === Category.SENSITIVE_CRITICAL || category === 'sensitive_critical' || category === 'SENSITIVE_CRITICAL';
   const isSelfHarm = category === Category.SENSITIVE || /suicid|self-harm|end my life|hopeless|trauma|depression/i.test(normalizedText);
 
   if (isThreat) {
@@ -146,6 +150,27 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
         : 'Physical safety threat detected. Quarantined in Shield Vault and escalated to creator review.',
       reasoningSummary: 'Possible physical safety threat detected. Human review recommended.',
       policyDecision: 'threat_escalation_required',
+    };
+  }
+
+  if (isSensitiveCritical) {
+    matchedPolicies.push({
+      ruleType: 'SAFETY',
+      ruleName: 'Critical Crisis Protocol',
+      description: 'Acute crisis or critical vulnerability detected. Surfaced immediately for urgent human review. Autopilot cannot override.',
+    });
+    return {
+      finalAction: RecommendedAction.HUMAN_REVIEW,
+      strategy: 'human_attention',
+      requiresHumanReview: true,
+      urgencyFlag: true,
+      matchedPolicies,
+      precedence: ['SAFETY'],
+      explanation: isAuthorTrusted
+        ? '⚠️ Safety override: Critical distress disclosures cannot be automated. Flagged for urgent creator review.'
+        : 'Critical distress detected. Ghost Guardian never automates crisis replies; flagged for urgent personal response.',
+      reasoningSummary: 'Critical personal distress detected. Urgent human review required.',
+      policyDecision: 'creator_review_required',
     };
   }
 
@@ -240,14 +265,18 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
     uncertainAction: PolicyAction.HUMAN_REVIEW,
   };
 
+  const actionToApply = (options.uncertain || options.isUncertain)
+    ? (categoryConfig.uncertainAction || categoryConfig.action)
+    : categoryConfig.action;
+
   matchedPolicies.push({
     ruleType: 'CATEGORY_POLICY',
     ruleName: `${category} Policy`,
-    description: `Category policy configured to: ${categoryConfig.action.toUpperCase()} (${categoryConfig.condition}).`,
+    description: `Category policy configured to: ${actionToApply.toUpperCase()} (${categoryConfig.condition}).`,
   });
 
   // STEP 5: RELATIONSHIP INFLUENCE (Precedence Level 5)
-  if (isAuthorTrusted && categoryConfig.action !== PolicyAction.SHIELD) {
+  if (isAuthorTrusted && actionToApply !== PolicyAction.SHIELD) {
     matchedPolicies.push({
       ruleType: 'RELATIONSHIP',
       ruleName: 'Trusted Contributor VIP Status',
@@ -256,7 +285,7 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
   }
 
   // Resolve Category Action to RecommendedAction
-  if (categoryConfig.action === PolicyAction.SILENCE) {
+  if (actionToApply === PolicyAction.SILENCE) {
     return {
       finalAction: RecommendedAction.SILENCE,
       strategy: 'silence',
@@ -269,7 +298,7 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
     };
   }
 
-  if (categoryConfig.action === PolicyAction.SHIELD || categoryConfig.action === PolicyAction.HIDE) {
+  if (actionToApply === PolicyAction.SHIELD || actionToApply === PolicyAction.HIDE) {
     return {
       finalAction: RecommendedAction.HUMAN_REVIEW,
       strategy: 'protect',
@@ -282,7 +311,7 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
     };
   }
 
-  if (categoryConfig.action === PolicyAction.ESCALATE) {
+  if (actionToApply === PolicyAction.ESCALATE) {
     return {
       finalAction: RecommendedAction.ESCALATE,
       strategy: 'escalate',
@@ -295,11 +324,12 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
     };
   }
 
-  if (categoryConfig.action === PolicyAction.HUMAN_REVIEW || category === Category.SENSITIVE) {
+  if (actionToApply === PolicyAction.HUMAN_REVIEW || category === Category.SENSITIVE || isSensitiveCritical) {
     return {
       finalAction: RecommendedAction.HUMAN_REVIEW,
       strategy: 'human_attention',
       requiresHumanReview: true,
+      ...(isSensitiveCritical ? { urgencyFlag: true } : {}),
       matchedPolicies,
       precedence: ['CATEGORY_POLICY'],
       explanation: `Your policy holds ${category} interactions for direct creator review.`,
@@ -312,7 +342,8 @@ export function evaluateCommentPolicy(commentText = '', category = Category.UNKN
   return {
     finalAction: RecommendedAction.DRAFT,
     strategy: category === Category.QUESTION ? 'answer' : category === Category.CONSTRUCTIVE_CRITICISM ? 'discuss' : 'acknowledge',
-    requiresHumanReview: policy.mode === 'copilot',
+    requiresHumanReview: isSensitiveCritical || policy.mode === 'copilot',
+    ...(isSensitiveCritical ? { urgencyFlag: true } : {}),
     matchedPolicies,
     precedence: ['CATEGORY_POLICY', 'GUARDIAN_DEFAULT'],
     explanation: `Your policy permits drafting responses for ${category} interactions aligned with your voice.`,

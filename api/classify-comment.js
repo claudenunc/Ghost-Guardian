@@ -25,6 +25,7 @@ const VALID_CLASSIFICATIONS = [
   'SPAM',
   'SCAM',
   'HUMOR',
+  'SENSITIVE',
 ];
 
 export default async function handler(req, res) {
@@ -56,11 +57,12 @@ export default async function handler(req, res) {
 Your task is to analyze an incoming social media / YouTube comment and classify it into EXACTLY ONE of the following taxonomy categories:
 
 CATEGORIES:
+- SENSITIVE: The commenter is disclosing real emotional pain, grief, loneliness, hopelessness, despair, self-harm or suicidal ideation, or is reaching out from a dark place. Signs include talk of not wanting to be here, cutting/bleeding/harming themselves, "the child within" dying, a lifetime of suffering, or asking the creator for help with their pain. This is a human moment, never a debate or a joke.
 - PRAISE: Genuine appreciation, gratitude, positive feedback, encouragement.
-- QUESTION: Asking for information, clarification, recommendations, or deeper insight.
+- QUESTION: Asking for information, clarification, recommendations, or deeper insight — in good faith.
 - DISAGREEMENT: Respectful, reasoned dissent or challenging of claims without hostility.
 - CONSTRUCTIVE_CRITICISM: Thoughtful suggestions for improvement, pointing out legitimate flaws.
-- TROLLING: Bad-faith provocation, low-effort mockery, baiting, or dismissive cynicism.
+- TROLLING: Bad-faith provocation, LOW-EFFORT mockery, baiting, or one-line dismissive sneering. A long, substantive, thoughtful comment is NOT trolling even if it is provocative, contrarian, or critical of the creator — that is DISAGREEMENT, CONSTRUCTIVE_CRITICISM, or QUESTION.
 - HARASSMENT: Targeted personal insults, persistent bullying, or derogatory hostility.
 - HATE: Hate speech targeting protected characteristics, identity groups, or dehumanizing language.
 - THREAT: Explicit or implicit threats of physical harm, violence, doxxing, or intimidation.
@@ -68,9 +70,14 @@ CATEGORIES:
 - SCAM: Deceptive schemes, crypto giveaways, impersonation, phishing, financial fraud.
 - HUMOR: Memes, witty remarks, friendly jokes, humorous observations.
 
+DECISION RULES (apply in order):
+1. If there is ANY sign of emotional distress, grief, despair, or self-harm/suicidal language, classify as SENSITIVE — even if the comment also contains a question. A hurting person always outranks the topic they are asking about.
+2. Presume good faith. Long, effortful, curious, or intellectually challenging comments are QUESTION / DISAGREEMENT / CONSTRUCTIVE_CRITICISM, not TROLLING or HARASSMENT.
+3. Only use TROLLING / HARASSMENT / HATE / THREAT when the hostility is clear and bad-faith.
+
 Respond STRICTLY in valid JSON matching this schema:
 {
-  "classification": "PRAISE" | "QUESTION" | "DISAGREEMENT" | "CONSTRUCTIVE_CRITICISM" | "TROLLING" | "HARASSMENT" | "HATE" | "THREAT" | "SPAM" | "SCAM" | "HUMOR",
+  "classification": "SENSITIVE" | "PRAISE" | "QUESTION" | "DISAGREEMENT" | "CONSTRUCTIVE_CRITICISM" | "TROLLING" | "HARASSMENT" | "HATE" | "THREAT" | "SPAM" | "SCAM" | "HUMOR",
   "confidence": number between 0.0 and 1.0 (e.g. 0.95),
   "reasoning": "Brief one-sentence justification for the classification."
 }`;

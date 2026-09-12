@@ -294,6 +294,32 @@ function reducer(state, action) {
         videos: updatedVideos,
       };
     }
+    case 'APPLY_CLASSIFICATION': {
+      // Layer 2: merge the AI classifier's result into an already-ingested
+      // comment. The rule engine's protected signals (THREAT/SENSITIVE) are
+      // preserved upstream in applyClassification(), which returns null when a
+      // downgrade would be unsafe — so this only ever refines or escalates.
+      const { commentId, fields } = action.payload;
+      if (!commentId || !fields) return state;
+      const newComments = (state.comments || []).map((c) =>
+        c.id === commentId ? { ...c, ...fields } : c
+      );
+      const cls = String(fields.classification || '').toUpperCase();
+      const current = state.commentStates[commentId] || {};
+      let nextStatus = current.status;
+      // Escalating to spam/scam silences it; escalating to a human moment or
+      // threat pulls it back into the pending queue for the creator.
+      if (current.status === 'pending' && (cls === 'SPAM' || cls === 'SCAM')) {
+        nextStatus = 'silenced';
+      } else if ((current.status === 'silenced') && (cls === 'SENSITIVE' || cls === 'SENSITIVE_CRITICAL' || cls === 'THREAT')) {
+        nextStatus = 'pending';
+      }
+      return {
+        ...state,
+        comments: newComments,
+        commentStates: { ...state.commentStates, [commentId]: { ...current, status: nextStatus } },
+      };
+    }
     case 'SET_TOAST':
       return { ...state, toast: action.payload };
     case 'CLEAR_TOAST':

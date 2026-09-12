@@ -24,6 +24,8 @@ export const AI_CLASSIFICATIONS = new Set([
   'SPAM',
   'SCAM',
   'HUMOR',
+  'SENSITIVE',
+  'SENSITIVE_CRITICAL',
 ]);
 
 const PROTECTED = new Set(['THREAT', 'SENSITIVE', 'SENSITIVE_CRITICAL', 'sensitive_critical']);
@@ -143,11 +145,13 @@ export function applyClassification(comment, aiResult) {
   if (next === comment.classification) return meta;
 
   const attrs = attributesForClassification(next);
+  const isHumanMoment = next === 'SENSITIVE' || next === 'SENSITIVE_CRITICAL';
   return {
     ...meta,
     ...attrs,
     classification: next,
     ruleSignal: 'strong_match',
+    signals: { ...(comment.signals || {}), humanMoment: isHumanMoment || Boolean(comment.signals?.humanMoment) },
     reasoningSummary: aiResult.reasoning || comment.reasoningSummary || '',
     reasoning: ['Imported from YouTube.', aiResult.reasoning || `Classified as ${next.replace(/_/g, ' ').toLowerCase()}.`],
   };

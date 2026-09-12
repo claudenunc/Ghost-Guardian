@@ -17,7 +17,7 @@ import InboxLanes from '../components/comments/InboxLanes';
 import CommentCard from '../components/comments/CommentCard';
 import { normalizeIncomingYouTubeComment } from '../lib/youtubeUtils';
 import { getYouTubeConnection, listMyVideos, startYouTubeConnect } from '../lib/youtubeConnect';
-import { shouldDraftFor, runWithConcurrency } from '../lib/commentPipeline';
+import { shouldDraftFor, runWithConcurrency, applyClassification } from '../lib/commentPipeline';
 import {
   getCommentPriority,
   isHandled,
@@ -50,6 +50,7 @@ export default function CommentInbox() {
     fetchYouTubeComments,
     ingestComments,
     generateAiResponse,
+    classifyComment,
     dispatch,
   } = useGuardian();
 
@@ -165,9 +166,26 @@ export default function CommentInbox() {
       setActiveLane('all');
       setSelectedVideoId(videoId);
 
+      // Layer 2 — nuanced AI classification. The instant rule pass (Layer 1)
+      // already tagged every comment and can only be ESCALATED from here, never
+      // downgraded (applyClassification refuses unsafe downgrades). This is what
+      // lets Guardian tell a genuine troll from a thoughtful challenger, and a
+      // hurting person from a routine question, before any draft is written.
+      if (typeof classifyComment === 'function') {
+        await runWithConcurrency(normalized, 4, async (c) => {
+          const ai = await classifyComment(c.text);
+          const fields = applyClassification(c, ai);
+          if (fields) {
+            Object.assign(c, fields); // keep local copy in sync for drafting below
+            dispatch({ type: 'APPLY_CLASSIFICATION', payload: { commentId: c.id, fields } });
+          }
+        });
+      }
+
       // Auto-draft replies in the creator's voice for eligible comments, in the
-      // background (bounded + concurrency-limited). Crisis/hostile/spam are never
-      // drafted (shouldDraftFor enforces the safety rules).
+      // background (bounded + concurrency-limited). Crisis/sensitive/hostile/spam
+      // are never drafted (shouldDraftFor enforces the safety rules) — and now the
+      // classification it checks has been refined by Layer 2.
       const draftable = normalized.filter(shouldDraftFor).slice(0, 20);
       if (draftable.length > 0 && typeof generateAiResponse === 'function') {
         runWithConcurrency(draftable, 3, async (c) => {

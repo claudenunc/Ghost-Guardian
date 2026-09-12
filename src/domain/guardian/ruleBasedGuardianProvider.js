@@ -16,8 +16,32 @@ const patterns = [
   [Category.PRAISE, ['love', 'amazing', 'incredible', 'thank you', 'appreciate', 'resonated', 'inspired'], 'low'],
 ];
 
+// Fail-safe distress net. This runs BEFORE every other rule so that a person in
+// pain is never demoted to a routine "QUESTION" just because their message ends
+// in a "?". The rules can only ever ESCALATE a comment to human care; the AI
+// layer is never allowed to downgrade a SENSITIVE signal (see commentPipeline).
+const DISTRESS_PHRASES = [
+  'suicidal', 'suicide', 'kill myself', 'end my life', 'want to die', "don't want to be here",
+  'do not want to be here', 'no reason to live', 'better off without me', 'better off dead',
+  'self-harm', 'self harm', 'harm myself', 'hurt myself', 'cut myself', 'cutting myself',
+  'cuts that bleed', 'sever the ventricle', 'slit my', 'overdose',
+  'child within', 'child inside', 'murder the child', 'kill the child within',
+  'lifetime of pain', 'years of pain', 'so much pain', 'depression', 'depressed', 'hopeless',
+  'hopelessness', 'give up on life', 'lost someone', 'grieving',
+  'can\'t go on', 'cant go on', 'no way out', 'end it all',
+];
+
+export function detectDistress(normalized) {
+  const matches = DISTRESS_PHRASES.filter((phrase) => normalized.includes(phrase));
+  return matches;
+}
+
 export function matchRule(text) {
   const normalized = text.toLowerCase();
+  const distress = detectDistress(normalized);
+  if (distress.length) {
+    return { category: Category.SENSITIVE, matches: distress, risk: 'high' };
+  }
   for (const [category, phrases, risk] of patterns) {
     const matches = phrases.filter((phrase) => normalized.includes(phrase));
     if (matches.length) return { category, matches, risk };

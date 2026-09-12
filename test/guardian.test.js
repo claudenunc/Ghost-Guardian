@@ -127,6 +127,21 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       assert.equal(result.category, Category.UNKNOWN);
       assert.equal(result.ruleSignal, RuleSignal.NEEDS_REVIEW);
     });
+
+    it('routes distress to SENSITIVE even when phrased as a question', () => {
+      const result = processWithRules({
+        text: 'Is it possible that an entire lifetime of pain will murder the child within? I want to die.',
+      });
+      assert.equal(result.category, Category.SENSITIVE);
+      assert.equal(result.requiresHumanReview, true);
+      assert.equal(result.draft, null);
+    });
+
+    it('does not let a trailing question mark downgrade self-harm language', () => {
+      const result = processWithRules({ text: 'why do the cuts that bleed never stop?' });
+      assert.equal(result.category, Category.SENSITIVE);
+      assert.equal(result.requiresHumanReview, true);
+    });
   });
 
   describe('Human Moment Foundation', () => {

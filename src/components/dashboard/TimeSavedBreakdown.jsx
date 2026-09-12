@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   Share2,
@@ -7,6 +7,11 @@ import {
   Clock,
   Check,
   Copy,
+  Trash2,
+  Bot,
+  Shield,
+  Zap,
+  Heart,
 } from 'lucide-react';
 import { Button, Chip } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
@@ -45,6 +50,21 @@ export default function TimeSavedBreakdown({
   const [customRate, setCustomRate] = useState(settings?.hourlyRate || 50);
   const [copiedKey, setCopiedKey] = useState(null);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        if (showShareModal) {
+          setShowShareModal(false);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showShareModal, onClose]);
+
   if (!isOpen) return null;
 
   const hours = timeSavedData?.totalHours || 47;
@@ -55,7 +75,7 @@ export default function TimeSavedBreakdown({
   const categories = [
     {
       key: 'spamFiltered',
-      icon: '🗑️',
+      icon: Trash2,
       title: 'Spam filtered',
       hours: breakdown.spamFiltered?.hoursSaved || 12,
       display: breakdown.spamFiltered?.display || '847 comments isolated from your feed',
@@ -65,33 +85,33 @@ export default function TimeSavedBreakdown({
     },
     {
       key: 'routineReplies',
-      icon: '🤖',
+      icon: Bot,
       title: 'Routine replies drafted',
       hours: breakdown.routineReplies?.hoursSaved || 15,
       display: breakdown.routineReplies?.display || '234 comments acknowledged in your voice',
       detail: '4 min / comment saved on reading, voice alignment calibration, and draft posting.',
-      accent: 'text-[#4de1dc]',
-      border: 'border-white/5 hover:border-[#4de1dc]/30',
+      accent: 'text-[#0200F1]',
+      border: 'border-white/5 hover:border-[#0200F1]/30',
     },
     {
       key: 'hostileShielded',
-      icon: '🛡️',
+      icon: Shield,
       title: 'Hostile shielded',
       hours: breakdown.hostileShielded?.hoursSaved || 8,
       display: breakdown.hostileShielded?.display || '23 comments concealed in Shield Vault',
       detail: '20 min / comment saved on emotional cognitive drain, rumination & threat evaluation.',
-      accent: 'text-[#818cf8]',
-      border: 'border-white/5 hover:border-[#818cf8]/30',
+      accent: 'text-[#7A00FF]',
+      border: 'border-white/5 hover:border-[#7A00FF]/30',
     },
     {
       key: 'strategicSilence',
-      icon: '🤐',
+      icon: Zap,
       title: 'Strategic silence',
       hours: breakdown.strategicSilence?.hoursSaved || 12,
       display: breakdown.strategicSilence?.display || '156 comments left unanswered (smart move)',
       detail: '5 min / comment saved by deliberately withholding attention from bad-faith troll bait.',
-      accent: 'text-[#fbbf24]',
-      border: 'border-white/5 hover:border-[#fbbf24]/30',
+      accent: 'text-[#FF6A00]',
+      border: 'border-white/5 hover:border-[#FF6A00]/30',
     },
   ];
 
@@ -116,8 +136,8 @@ export default function TimeSavedBreakdown({
 
   const handleExportReport = () => {
     const reportText = generateTimeSavedReport({
-      creatorName: creator?.displayName || 'Alex Chen',
-      channelName: creator?.channelName || 'The Long Signal',
+      creatorName: creator?.displayName || 'Creator',
+      channelName: creator?.channelName || 'Workspace',
       totalHours: hours,
       dollarValue: value,
       hourlyRate: rate,
@@ -146,6 +166,9 @@ export default function TimeSavedBreakdown({
 
   return (
     <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="time-saved-modal-title"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/95 animate-in fade-in duration-200"
       style={{ backgroundColor: 'rgba(0, 0, 0, 0.96)' }}
     >
@@ -167,7 +190,7 @@ export default function TimeSavedBreakdown({
                 Attention Economics
               </span>
             </div>
-            <h2 className="font-display text-xl sm:text-2xl text-white font-bold">
+            <h2 id="time-saved-modal-title" className="font-display text-xl sm:text-2xl text-white font-bold">
               How Ghost Guardian saved you {hours} hours
             </h2>
           </div>
@@ -175,6 +198,7 @@ export default function TimeSavedBreakdown({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close attention economics modal"
             className="p-2 rounded-xl text-[#8f97b0] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
           >
             <X size={20} />
@@ -242,36 +266,41 @@ export default function TimeSavedBreakdown({
               Category Breakdown
             </h3>
 
-            {categories.map((cat) => (
-              <div
-                key={cat.key}
-                className="p-4 rounded-2xl bg-[#000000] border border-white/10 transition-all"
-                style={{ backgroundColor: '#000000' }}
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xl">{cat.icon}</span>
-                    <div>
-                      <h4 className="font-display text-sm text-white font-bold">{cat.title}</h4>
-                      <p className="text-xs text-[#a0a0a0] mt-0.5">{cat.display}</p>
+            {categories.map((cat) => {
+              const CatIcon = cat.icon;
+              return (
+                <div
+                  key={cat.key}
+                  className="p-4 rounded-2xl bg-[#000000] border border-white/10 transition-all"
+                  style={{ backgroundColor: '#000000' }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className={`p-2 rounded-xl bg-white/5 ${cat.accent} flex items-center justify-center shrink-0`}>
+                        <CatIcon size={18} />
+                      </span>
+                      <div>
+                        <h4 className="font-display text-sm text-white font-bold">{cat.title}</h4>
+                        <p className="text-xs text-[#a0a0a0] mt-0.5">{cat.display}</p>
+                      </div>
+                    </div>
+
+                    <div className="text-right shrink-0">
+                      <span className={`text-base font-display font-bold ${cat.accent}`}>
+                        {cat.hours} hours
+                      </span>
+                      <span className="text-[10px] text-[#a0a0a0] block">
+                        ~${Math.round(cat.hours * rate).toLocaleString()} value
+                      </span>
                     </div>
                   </div>
 
-                  <div className="text-right shrink-0">
-                    <span className={`text-base font-display font-bold ${cat.accent}`}>
-                      {cat.hours} hours
-                    </span>
-                    <span className="text-[10px] text-[#a0a0a0] block">
-                      ~${Math.round(cat.hours * rate).toLocaleString()} value
-                    </span>
-                  </div>
+                  <p className="mt-2.5 pt-2.5 border-t border-white/5 text-[11px] text-[#a0a0a0] leading-relaxed">
+                    {cat.detail}
+                  </p>
                 </div>
-
-                <p className="mt-2.5 pt-2.5 border-t border-white/5 text-[11px] text-[#a0a0a0] leading-relaxed">
-                  {cat.detail}
-                </p>
-              </div>
-            ))}
+              );
+            })}
 
             {/* Human Moments Protected Row */}
             <div
@@ -279,7 +308,9 @@ export default function TimeSavedBreakdown({
               style={{ backgroundColor: '#000000' }}
             >
               <div className="flex items-center gap-3">
-                <span className="text-xl">🤍</span>
+                <span className="p-2 rounded-xl bg-[#FF007A]/15 text-[#FF007A] flex items-center justify-center shrink-0 border border-[#FF007A]/30 shadow-[0_0_12px_rgba(255,0,122,0.25)]">
+                  <Heart size={18} />
+                </span>
                 <div>
                   <div className="flex items-center gap-2">
                     <h4 className="font-display text-sm text-white font-bold">Human moments protected</h4>
@@ -382,16 +413,22 @@ export default function TimeSavedBreakdown({
 
         {/* Embedded Social Share Modal */}
         {showShareModal && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="share-modal-title"
+            className="absolute inset-0 z-50 flex items-center justify-center p-6 bg-black/90 animate-in fade-in duration-150"
+          >
             <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#121625] p-6 space-y-4 shadow-2xl">
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <Share2 size={16} className="text-[#4de1dc]" />
-                  <h3 className="font-display text-sm text-white font-bold">Share Creator Savings</h3>
+                  <Share2 size={16} className="text-[#0200F1]" />
+                  <h3 id="share-modal-title" className="font-display text-sm text-white font-bold">Share Creator Savings</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setShowShareModal(false)}
+                  aria-label="Close share dialog"
                   className="p-1 rounded text-[#8f97b0] hover:text-white cursor-pointer"
                 >
                   <X size={16} />

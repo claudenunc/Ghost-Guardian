@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { NavLink, Outlet, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -38,7 +38,16 @@ const primaryMobileNav = navItems.slice(0, 4);
 const secondaryMobileNav = navItems.slice(4);
 
 export default function AppLayout() {
-  const { settings, updateSettings, comments, stateFor, toast, dispatch } = useGuardian();
+  const {
+    settings,
+    updateSettings,
+    comments,
+    stateFor,
+    toast,
+    dispatch,
+    videos = [],
+    activity = [],
+  } = useGuardian();
   const [mobileMoreOpen, setMobileMoreOpen] = useState(false);
   const location = useLocation();
 
@@ -51,6 +60,13 @@ export default function AppLayout() {
   ).length;
 
   const pendingCount = comments.filter((c) => stateFor(c.id).status === 'pending').length;
+
+  const lastSyncLabel = useMemo(() => {
+    if (activity.length > 0 && activity[0]?.timestamp) {
+      return new Date(activity[0].timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+    return videos.length > 0 ? `${videos.length} VIDEOS` : 'INITIALIZED';
+  }, [activity, videos]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -82,19 +98,19 @@ export default function AppLayout() {
         {/* Tactical Telemetry Strip */}
         <div className="border-b border-white/[0.05] bg-[#050505] px-4 py-1 sm:px-6 hidden sm:flex items-center justify-between text-[10px] font-mono tracking-widest text-[#a0a0a0]">
           <div className="flex items-center gap-3">
-            <span className="text-[#00FF66] flex items-center gap-1.5">
-              <span className="size-1.5 rounded-full bg-[#00FF66] shadow-[0_0_8px_#00FF66]" />
-              SYSTEM PROTOCOL: ACTIVE
+            <span className={settings.paused ? 'text-[#FF6A00] flex items-center gap-1.5' : 'text-[#00FF66] flex items-center gap-1.5'}>
+              <span className={`size-1.5 rounded-full ${settings.paused ? 'bg-[#FF6A00] shadow-[0_0_8px_#FF6A00]' : 'bg-[#00FF66] shadow-[0_0_8px_#00FF66]'}`} />
+              SYSTEM: {settings.paused ? 'DEFENSE PAUSED' : 'PERIMETER ACTIVE'}
             </span>
             <span className="text-white/20">|</span>
-            <span>CLEARANCE: CREATOR // LEVEL-4</span>
+            <span>POSTURE: {(settings.mode || 'copilot').toUpperCase()} MODE</span>
             <span className="text-white/20">|</span>
-            <span>CORE: DETERMINISTIC SAFETY GUARD</span>
+            <span>SYNC: {lastSyncLabel}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span>DEFENSE BUFFER: 100%</span>
+            <span>QUEUE: {pendingCount} PENDING{needsAttention > 0 ? ` (${needsAttention} HIGH RISK)` : ''}</span>
             <span className="text-white/20">|</span>
-            <span className="text-[#0A00FF]">ATTENTION SHIELD ENGAGED</span>
+            <span className="text-[#0200F1] font-bold">ATTENTION SHIELD ENGAGED</span>
           </div>
         </div>
 
@@ -155,7 +171,7 @@ export default function AppLayout() {
               className={({ isActive }) =>
                 `flex items-center gap-2 rounded-lg px-3.5 py-1.5 text-xs font-display font-bold uppercase tracking-wider transition-all duration-150 ${
                   isActive
-                    ? 'bg-[#0a0a0a] text-white border border-[#0A00FF] shadow-[0_0_18px_rgba(10,0,255,0.4),inset_0_1px_0_rgba(255,255,255,0.2)]'
+                    ? 'bg-[#0a0a0a] text-white border border-[#0200F1] shadow-[0_0_18px_rgba(2,0,241,0.4),inset_0_1px_0_rgba(255,255,255,0.2)]'
                     : 'text-[#a0a0a0] hover:bg-white/[0.04] hover:text-white border border-transparent'
                 }`
               }
@@ -163,7 +179,7 @@ export default function AppLayout() {
               <Icon size={14} strokeWidth={2} />
               <span>{label}</span>
               {to === '/app/inbox' && pendingCount > 0 && (
-                <span className="ml-1 rounded bg-[#0A00FF] text-white px-1.5 py-0.2 text-[10px] font-mono font-bold shadow-[0_0_10px_#0A00FF]">
+                <span className="ml-1 rounded bg-[#0200F1] text-white px-1.5 py-0.2 text-[10px] font-mono font-bold shadow-[0_0_10px_#0200F1]">
                   {pendingCount}
                 </span>
               )}
@@ -217,7 +233,12 @@ export default function AppLayout() {
 
       {/* Tactical Mobile Menu Sheet */}
       {mobileMoreOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-150">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tactical-menu-heading"
+          className="fixed inset-0 z-50 lg:hidden flex flex-col justify-end animate-in fade-in duration-150"
+        >
           {/* Backdrop */}
           <div
             className="fixed inset-0 bg-black/90 transition-opacity"
@@ -233,7 +254,7 @@ export default function AppLayout() {
           >
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div>
-                <span className="font-display text-sm tracking-[0.2em] uppercase font-bold text-white block">
+                <span id="tactical-menu-heading" className="font-display text-sm tracking-[0.2em] uppercase font-bold text-white block">
                   Tactical Operations
                 </span>
                 <span className="text-[10px] font-mono text-[#a0a0a0]">
@@ -260,19 +281,19 @@ export default function AppLayout() {
                     onClick={() => setMobileMoreOpen(false)}
                     className={`flex items-center justify-between p-3.5 rounded-xl border transition-all ${
                       isActive
-                        ? 'bg-[#0a0a0a] border-[#0A00FF] text-white shadow-[0_0_15px_rgba(10,0,255,0.3)]'
+                        ? 'bg-[#0a0a0a] border-[#0200F1] text-white shadow-[0_0_15px_rgba(2,0,241,0.3)]'
                         : 'border-white/5 bg-[#080808] text-[#a0a0a0] hover:text-white hover:border-white/15'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0A00FF]/20 text-[#0A00FF]' : 'bg-white/5 text-[#a0a0a0]'}`}>
+                      <div className={`p-2 rounded-lg ${isActive ? 'bg-[#0200F1]/20 text-[#0200F1]' : 'bg-white/5 text-[#a0a0a0]'}`}>
                         <Icon size={18} />
                       </div>
                       <span className="font-display font-bold uppercase text-xs tracking-wider">
                         {label}
                       </span>
                     </div>
-                    <ChevronRight size={16} className={isActive ? 'text-[#0A00FF]' : 'text-white/20'} />
+                    <ChevronRight size={16} className={isActive ? 'text-[#0200F1]' : 'text-white/20'} />
                   </NavLink>
                 );
               })}
@@ -292,7 +313,7 @@ export default function AppLayout() {
             {toast.type === 'success' && <CheckCircle size={16} className="text-[#00FF66] shrink-0" />}
             {toast.type === 'warning' && <AlertTriangle size={16} className="text-[#FF6A00] shrink-0" />}
             {toast.type === 'error' && <AlertTriangle size={16} className="text-[#FF2A00] shrink-0" />}
-            {toast.type === 'info' && <Info size={16} className="text-[#0A00FF] shrink-0" />}
+            {toast.type === 'info' && <Info size={16} className="text-[#0200F1] shrink-0" />}
             <span className="font-mono text-white leading-relaxed">{toast.message}</span>
           </div>
           <button

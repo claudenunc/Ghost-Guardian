@@ -29,32 +29,36 @@ export default function Settings() {
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
-              <span className="pulse-dot bg-[#4de1dc]" />
-              <span className="text-xs font-bold tracking-[0.2em] text-[#4de1dc] uppercase">
+              <span className="pulse-dot bg-[#0200F1]" />
+              <span className="text-xs font-bold tracking-[0.2em] text-[#0200F1] uppercase">
                 Workspace Control Center
               </span>
             </div>
             <h1 className="mt-2 font-display text-2xl sm:text-4xl text-white">
               Settings, Portability & Operational Control
             </h1>
-            <p className="mt-2 text-sm text-[#8f97b0] max-w-2xl leading-relaxed">
+            <p className="mt-2 text-sm text-[#a0a0a0] max-w-2xl leading-relaxed">
               Manage workspace identity, connected platforms, attention notification triggers, operational mode status, and full data backups.
             </p>
           </div>
 
           <div className="flex flex-col items-end gap-1.5 shrink-0">
             <Chip variant="guardian" className="font-mono">
-              🛡️ {creator?.displayName || 'Alex Chen'}
+              {creator?.displayName || 'Creator Workspace'}
             </Chip>
-            <span className="text-[11px] text-[#8f97b0]">
-              {creator?.channelName || 'The Long Signal'} · Demo Mode
+            <span className="text-[11px] text-[#a0a0a0]">
+              {creator?.channelName || 'Active Channel'} · {(settings?.mode || 'copilot').toUpperCase()} MODE
             </span>
           </div>
         </div>
       </div>
 
       {/* 2. TAB NAVIGATION */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto scrollbar-none">
+      <div
+        role="tablist"
+        aria-label="Settings navigation tabs"
+        className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-x-auto scrollbar-none"
+      >
         {[
           { id: 'identity', label: '1. Workspace Identity', icon: User },
           { id: 'platforms', label: '2. Platforms', icon: Video },
@@ -69,11 +73,14 @@ export default function Settings() {
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={tab.label}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 rounded-xl px-3 py-2 sm:px-4 sm:py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
                 isActive
-                  ? 'bg-[#1e2235] text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]'
-                  : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#0200F1]/15 text-white border-[#0200F1]/40 shadow-[0_0_15px_rgba(2,0,241,0.2)]'
+                  : 'border-transparent text-[#a0a0a0] hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon size={14} />

@@ -56,18 +56,22 @@ export const INBOX_LANES = [
 export default function InboxLanes({ activeLane, onSelectLane, laneCounts }) {
   return (
     <div className="w-full overflow-x-auto pb-1">
-      <div className="flex items-center gap-1.5 min-w-max p-1 rounded-2xl bg-[#141724] border border-white/5">
+      <div
+        role="tablist"
+        aria-label="Comment triage lanes"
+        className="flex items-center gap-1.5 min-w-max p-1 rounded-2xl bg-[#0a0a0a] border border-white/10"
+      >
         {INBOX_LANES.map((lane) => {
           const Icon = lane.icon;
           const isActive = activeLane === lane.id;
           const count = laneCounts[lane.id] ?? 0;
 
           const activeColors = {
-            attention: 'bg-[#fbbf24]/15 text-[#fbbf24] border-[#fbbf24]/40 shadow-[0_0_15px_rgba(251,191,36,0.15)]',
-            guardian: 'bg-[#4de1dc]/15 text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]',
-            human: 'bg-[#c084fc]/15 text-[#c084fc] border-[#c084fc]/40 shadow-[0_0_15px_rgba(192,132,252,0.15)]',
-            shield: 'bg-[#818cf8]/15 text-[#818cf8] border-[#818cf8]/40 shadow-[0_0_15px_rgba(129,140,248,0.15)]',
-            positive: 'bg-[#34d399]/15 text-[#34d399] border-[#34d399]/40 shadow-[0_0_15px_rgba(52,211,153,0.15)]',
+            attention: 'bg-[#FF6A00]/15 text-[#FF6A00] border-[#FF6A00]/40 shadow-[0_0_15px_rgba(255,106,0,0.15)]',
+            guardian: 'bg-[#0200F1]/15 text-[#0200F1] border-[#0200F1]/40 shadow-[0_0_15px_rgba(2,0,241,0.15)]',
+            human: 'bg-[#FF007A]/15 text-[#FF007A] border-[#FF007A]/40 shadow-[0_0_15px_rgba(255,0,122,0.15)]',
+            shield: 'bg-[#7A00FF]/15 text-[#7A00FF] border-[#7A00FF]/40 shadow-[0_0_15px_rgba(122,0,255,0.15)]',
+            positive: 'bg-[#00FF66]/15 text-[#00FF66] border-[#00FF66]/40 shadow-[0_0_15px_rgba(0,255,102,0.15)]',
             default: 'bg-white/15 text-white border-white/30',
           }[lane.tone] || 'bg-white/10 text-white border-white/20';
 
@@ -75,11 +79,14 @@ export default function InboxLanes({ activeLane, onSelectLane, laneCounts }) {
             <button
               key={lane.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={`${lane.label} lane (${count} comments)`}
               onClick={() => onSelectLane(lane.id)}
               className={`flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all cursor-pointer border ${
                 isActive
                   ? activeColors
-                  : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'
+                  : 'border-transparent text-[#a0a0a0] hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon size={14} />
@@ -88,7 +95,7 @@ export default function InboxLanes({ activeLane, onSelectLane, laneCounts }) {
                 className={`ml-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold ${
                   isActive
                     ? 'bg-black/30 text-white'
-                    : 'bg-[#1e2235] text-[#8f97b0]'
+                    : 'bg-[#161616] text-[#a0a0a0]'
                 }`}
               >
                 {count}

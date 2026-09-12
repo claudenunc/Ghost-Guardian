@@ -4,7 +4,7 @@
    Surfaces: Machined Forged Obsidian Metal (#0a0a0a)
    Lighting: Contained Electric Plasma Bloom (Blue, Red, Purple, Orange, Green, Pink)
    Materials: Forged, Carved, Sculpted, Weathered Dimensional Metallic Stone
-   Typography: Monumental Orbitron / Rajdhani / Inter
+   Typography: Monumental Rajdhani / Inter / JetBrains Mono
    NO Glassmorphism · NO Pastels · NO Flat UI · NO Soft Gradients
    ========================================================================== */
 
@@ -30,12 +30,12 @@
   /* Electric Plasma Color System (PLASMA, NOT NEON) */
   /* 1. Primary — Electric Plasma Blue (Intelligence, Architecture, AI Consciousness) */
   --plasma-blue-core: #0200F1;
-  --plasma-blue: #0A00FF;
-  --plasma-blue-deep: #1200CC;
-  --plasma-blue-glow: rgba(10, 0, 255, 0.5);
-  --guardian: #0A00FF;
-  --primary: #0A00FF;
-  --primary-hover: #0200F1;
+  --plasma-blue: #0200F1;
+  --plasma-blue-deep: #0100B8;
+  --plasma-blue-glow: rgba(2, 0, 241, 0.5);
+  --guardian: #0200F1;
+  --primary: #0200F1;
+  --primary-hover: #0A00FF;
   --primary-foreground: #ffffff;
 
   /* 2. Electric Plasma Red (Warnings, Execution, Active State, Critical Defense) */
@@ -85,7 +85,7 @@
   --shadow-forged: inset 0 1px 0 rgba(255, 255, 255, 0.1), inset 0 -1px 0 rgba(0, 0, 0, 0.95), 0 16px 40px -10px rgba(0, 0, 0, 0.98);
 
   /* Typography Families */
-  --font-display: 'Orbitron', -apple-system, sans-serif;
+  --font-display: 'Rajdhani', -apple-system, sans-serif;
   --font-tactical: 'Rajdhani', -apple-system, sans-serif;
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -395,12 +395,14 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 /* Plasma Text Tokens */
 .text-plasma-blue,
+.text-\[\#0200F1\],
+.text-\[\#0200f1\],
 .text-\[\#0A00FF\],
 .text-\[\#0a00ff\],
 .text-\[\#4de1dc\],
 .text-\[\#a5f3fc\] {
-  color: #0A00FF !important;
-  text-shadow: 0 0 12px rgba(10, 0, 255, 0.5);
+  color: #0200F1 !important;
+  text-shadow: 0 0 12px rgba(2, 0, 241, 0.5);
 }
 
 .text-plasma-green,
@@ -433,11 +435,17 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .text-plasma-purple,
 .text-\[\#818cf8\],
 .text-\[\#a855f7\] {
-  color: #A000FF !important;
+  color: #7A00FF !important;
   text-shadow: 0 0 12px rgba(122, 0, 255, 0.5);
 }
 
-/* Secondary & Muted remapped from blue-gray to high-contrast monochrome #a0a0a0 */
+/* Secondary & Muted text utilities */
+.text-\[\#a0a0a0\],
+.text-\[\#a0a0a0\]\/90,
+.text-\[\#a0a0a0\]\/80,
+.text-\[\#a0a0a0\]\/70,
+.text-\[\#a0a0a0\]\/60,
+.text-\[\#a0a0a0\]\/50,
 .text-\[\#8f97b0\],
 .text-\[\#8f97b0\]\/50,
 .text-\[\#8f97b0\]\/60,
@@ -498,11 +506,22 @@ h1, h2, h3, h4, h5, h6, .font-display {
 }
 
 /* Plasma Translucent Surfaces */
+.bg-\[\#0200F1\],
+.bg-\[\#0200f1\],
+.bg-\[\#0A00FF\],
+.bg-\[\#0a00ff\] {
+  background-color: #0200F1 !important;
+}
+
+.bg-\[\#0200F1\]\/10,
+.bg-\[\#0200F1\]\/15,
+.bg-\[\#0200F1\]\/20,
+.bg-\[\#0A00FF\]\/20,
 .bg-\[\#4de1dc\],
 .bg-\[\#4de1dc\]\/10,
 .bg-\[\#4de1dc\]\/15,
 .bg-\[\#4de1dc\]\/5 {
-  background-color: rgba(10, 0, 255, 0.15) !important;
+  background-color: rgba(2, 0, 241, 0.15) !important;
 }
 
 .bg-\[\#34d399\],
@@ -556,13 +575,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
   border-color: rgba(255, 255, 255, 0.08) !important;
 }
 
+.border-\[\#0200F1\],
+.border-\[\#0200f1\],
+.border-\[\#0200F1\]\/20,
+.border-\[\#0200F1\]\/30,
+.border-\[\#0200F1\]\/40,
+.border-\[\#0A00FF\],
 .border-\[\#4de1dc\],
 .border-\[\#4de1dc\]\/20,
 .border-\[\#4de1dc\]\/25,
 .border-\[\#4de1dc\]\/30,
 .border-\[\#4de1dc\]\/40,
 .border-\[\#4de1dc\]\/60 {
-  border-color: rgba(10, 0, 255, 0.45) !important;
+  border-color: rgba(2, 0, 241, 0.45) !important;
 }
 
 .border-\[\#34d399\],
@@ -673,6 +698,19 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .space-y-5 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.25rem; }
 .space-y-6 > :not([hidden]) ~ :not([hidden]) { margin-top: 1.5rem; }
 .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 2rem; }
+
+/* Dividers */
+.divide-y > :not([hidden]) ~ :not([hidden]) {
+  border-top-width: 1px;
+  border-top-style: solid;
+}
+.divide-white\/5 > :not([hidden]) ~ :not([hidden]),
+.divide-white\/\[0\.05\] > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.05) !important;
+}
+.divide-white\/10 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
 
 /* Padding & Margin */
 .p-1 { padding: 0.25rem; }
@@ -817,6 +855,56 @@ h1, h2, h3, h4, h5, h6, .font-display {
 .scrollbar-none::-webkit-scrollbar { display: none; }
 .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Line Clamp Utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.line-clamp-none {
+  display: block;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: unset;
+  overflow: visible;
+}
+
+/* Hover & Focus Utilities */
+.hover\:bg-white\/5:hover { background-color: rgba(255, 255, 255, 0.05) !important; }
+.hover\:bg-white\/10:hover { background-color: rgba(255, 255, 255, 0.1) !important; }
+.hover\:bg-white\/\[0\.01\]:hover { background-color: rgba(255, 255, 255, 0.01) !important; }
+.hover\:bg-white\/\[0\.02\]:hover { background-color: rgba(255, 255, 255, 0.02) !important; }
+.hover\:bg-white\/\[0\.04\]:hover { background-color: rgba(255, 255, 255, 0.04) !important; }
+.hover\:bg-white\/\[0\.06\]:hover { background-color: rgba(255, 255, 255, 0.06) !important; }
+.hover\:text-white:hover { color: #ffffff !important; }
+.hover\:text-\[\#4de1dc\]:hover,
+.hover\:text-\[\#0200F1\]:hover { color: #0200F1 !important; }
+.hover\:border-white:hover { border-color: #ffffff !important; }
+.hover\:border-white\/15:hover { border-color: rgba(255, 255, 255, 0.15) !important; }
+.hover\:border-white\/20:hover { border-color: rgba(255, 255, 255, 0.2) !important; }
+.hover\:border-white\/25:hover { border-color: rgba(255, 255, 255, 0.25) !important; }
+.hover\:border-\[\#fbbf24\]\/40:hover { border-color: rgba(255, 106, 0, 0.4) !important; }
+.hover\:border-\[\#34d399\]\/40:hover { border-color: rgba(0, 255, 102, 0.4) !important; }
+.hover\:border-\[\#c084fc\]\/40:hover { border-color: rgba(255, 0, 122, 0.4) !important; }
+
 /* Screen-reader only (visually hidden, semantically present) */
 .sr-only {
   position: absolute;
@@ -866,9 +954,11 @@ h1, h2, h3, h4, h5, h6, .font-display {
 
 @media (min-width: 1024px) {
   .lg\:flex { display: flex; }
+  .lg\:hidden { display: none !important; }
   .lg\:flex-row { flex-direction: row; }
   .lg\:items-center { align-items: center; }
   .lg\:justify-between { justify-content: space-between; }
+  .lg\:grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .lg\:grid-cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .lg\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .lg\:grid-cols-12 { grid-template-columns: repeat(12, minmax(0, 1fr)); }

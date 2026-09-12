@@ -8,18 +8,13 @@ import {
   AlertTriangle,
   Sparkles,
   Lock,
-  EyeOff,
-  CheckCircle,
-  Clock,
   Sliders,
   History,
-  Info,
 } from 'lucide-react';
 import {
   Button,
   Chip,
   SectionTitle,
-  Switch,
 } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 import { policyPresets } from '../domain/policy/guardianPolicy';
@@ -105,11 +100,12 @@ export default function GuardianRules() {
           </div>
 
           <div className="flex flex-col items-end gap-2 shrink-0">
-            <Chip variant="guardian" className="font-mono">
-              🛡️ Policy v{policy?.version || '2.4.0'}
+            <Chip variant="guardian" className="font-mono flex items-center gap-1">
+              <Shield size={12} className="text-[#0200F1]" />
+              Policy v{policy?.version || '2.4.0'}
             </Chip>
             <span className="text-[11px] text-[#8f97b0]">
-              Last updated: {new Date(policy?.updatedAt || Date.now()).toLocaleDateString()}
+              Last updated: {policy?.updatedAt ? new Date(policy.updatedAt).toLocaleDateString() : 'Active'}
             </span>
           </div>
         </div>
@@ -215,7 +211,11 @@ export default function GuardianRules() {
       </section>
 
       {/* 3. POLICY STUDIO TAB NAVIGATION */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-x-auto max-w-full scrollbar-none">
+      <div
+        role="tablist"
+        aria-label="Policy studio navigation tabs"
+        className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-x-auto max-w-full scrollbar-none"
+      >
         {[
           { id: 'matrix', label: '2. Category Policy Matrix', icon: Sliders },
           { id: 'simulator', label: '3. "What Will Happen?" Simulator', icon: Sparkles },
@@ -229,11 +229,14 @@ export default function GuardianRules() {
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={tab.label}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
                 isActive
-                  ? 'bg-[#1e2235] text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]'
-                  : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#0200F1]/15 text-white border-[#0200F1]/40 shadow-[0_0_15px_rgba(2,0,241,0.2)]'
+                  : 'border-transparent text-[#a0a0a0] hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon size={14} />

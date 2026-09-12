@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Download,
   Upload,
@@ -26,6 +26,15 @@ export default function DataPortability() {
     rehydratedState: null,
   });
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  useEffect(() => {
+    if (!showPreviewModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowPreviewModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showPreviewModal]);
 
   const handleFileChange = (e) => {
     const file = e.target.files?.[0];
@@ -168,61 +177,67 @@ export default function DataPortability() {
 
       {/* Restore Preview & Confirmation Modal */}
       {showPreviewModal && importState.preview && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-lg rounded-2xl border border-[#4de1dc]/40 bg-[#131726] p-6 space-y-5 shadow-2xl">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="backup-preview-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-lg rounded-2xl border border-[#0200F1]/40 bg-[#0a0a0a] p-6 space-y-5 shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="size-10 rounded-xl bg-[#4de1dc]/15 text-[#4de1dc] flex items-center justify-center">
+              <div className="size-10 rounded-xl bg-[#0200F1]/15 text-[#0200F1] flex items-center justify-center">
                 <CheckCircle2 size={22} />
               </div>
               <div>
-                <h4 className="font-display text-lg text-white font-bold">
+                <h4 id="backup-preview-title" className="font-display text-lg text-white font-bold">
                   Valid Workspace Backup Found
                 </h4>
-                <p className="text-xs text-[#8f97b0]">
+                <p className="text-xs text-[#a0a0a0]">
                   Review the backup contents before restoring.
                 </p>
               </div>
             </div>
 
             {/* Preview Breakdown */}
-            <div className="rounded-xl border border-white/10 bg-[#0d0f17] p-4 space-y-2.5 text-xs">
+            <div className="rounded-xl border border-white/10 bg-[#000000] p-4 space-y-2.5 text-xs">
               <div className="flex justify-between text-white">
-                <span className="text-[#8f97b0]">Creator / Channel:</span>
+                <span className="text-[#a0a0a0]">Creator / Channel:</span>
                 <span className="font-semibold">{importState.preview.creatorName} ({importState.preview.channelName})</span>
               </div>
               <div className="flex justify-between text-white">
-                <span className="text-[#8f97b0]">Backup Date:</span>
+                <span className="text-[#a0a0a0]">Backup Date:</span>
                 <span className="font-mono">{new Date(importState.preview.exportedAt).toLocaleString()}</span>
               </div>
               <div className="flex justify-between text-white">
-                <span className="text-[#8f97b0]">Voice Profile & Rules:</span>
-                <span className="text-[#34d399] font-medium">Included & Validated</span>
+                <span className="text-[#a0a0a0]">Voice Profile & Rules:</span>
+                <span className="text-[#00FF66] font-medium">Included & Validated</span>
               </div>
               <div className="flex justify-between text-white">
-                <span className="text-[#8f97b0]">Activity Records:</span>
+                <span className="text-[#a0a0a0]">Activity Records:</span>
                 <span>{importState.preview.activityCount} logged actions</span>
               </div>
               <div className="flex justify-between text-white">
-                <span className="text-[#8f97b0]">Content Opportunities:</span>
+                <span className="text-[#a0a0a0]">Content Opportunities:</span>
                 <span>{importState.preview.opportunitiesCount} items</span>
               </div>
             </div>
 
             {/* Safety Warning & Safety Net */}
-            <div className="rounded-xl border border-[#fbbf24]/30 bg-[#1a1712] p-3.5 space-y-2 text-xs text-[#e4e7f1]">
-              <div className="flex items-center gap-2 text-[#fbbf24] font-bold">
+            <div className="rounded-xl border border-[#FF6A00]/30 bg-[#000000] p-3.5 space-y-2 text-xs text-white">
+              <div className="flex items-center gap-2 text-[#FF6A00] font-bold">
                 <AlertTriangle size={14} />
                 <span>Replacement Safety Notice</span>
               </div>
-              <p>
+              <p className="text-[#a0a0a0]">
                 Restoring this backup will replace your current workspace configuration. Would you like to export your current state first?
               </p>
               <button
                 type="button"
                 onClick={handleExportBackupFirst}
-                className="text-[11px] text-[#4de1dc] hover:underline font-semibold cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-[11px] text-[#0200F1] hover:underline font-semibold cursor-pointer"
               >
-                📥 Export current workspace before replacing
+                <Download size={13} />
+                <span>Export current workspace before replacing</span>
               </button>
             </div>
 

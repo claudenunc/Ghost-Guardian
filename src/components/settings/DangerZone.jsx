@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   AlertTriangle,
   RotateCcw,
@@ -14,6 +14,18 @@ export default function DangerZone() {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    if (!showClearConfirm && !showDeleteConfirm) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setShowClearConfirm(false);
+        setShowDeleteConfirm(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showClearConfirm, showDeleteConfirm]);
 
   const handleClearLocalStorage = () => {
     try {
@@ -130,12 +142,17 @@ export default function DangerZone() {
 
       {/* Confirmation Modal: Clear Local Cache */}
       {showClearConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-[#121625] p-6 space-y-4 shadow-2xl">
-            <h4 className="font-display text-base font-bold text-white">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-cache-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-[#0a0a0a] p-6 space-y-4 shadow-2xl">
+            <h4 id="clear-cache-title" className="font-display text-base font-bold text-white">
               Clear local browser cache?
             </h4>
-            <p className="text-xs text-[#8f97b0] leading-relaxed">
+            <p className="text-xs text-[#a0a0a0] leading-relaxed">
               This will remove cached workspace snapshots from your browser and reload fresh state.
             </p>
             <div className="flex justify-end gap-3 pt-2">
@@ -152,15 +169,20 @@ export default function DangerZone() {
 
       {/* Confirmation Modal: Delete Workspace Data */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-[#FF1400]/40 bg-[#161215] p-6 space-y-4 shadow-2xl">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-workspace-title"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4 animate-in fade-in duration-200"
+        >
+          <div className="w-full max-w-md rounded-2xl border border-[#FF1400]/40 bg-[#0a0a0a] p-6 space-y-4 shadow-2xl">
             <div className="flex items-center gap-2 text-[#FF1400]">
               <ShieldAlert size={20} />
-              <h4 className="font-display text-base font-bold text-white">
+              <h4 id="delete-workspace-title" className="font-display text-base font-bold text-white">
                 Delete all workspace data?
               </h4>
             </div>
-            <p className="text-xs text-[#8f97b0] leading-relaxed">
+            <p className="text-xs text-[#a0a0a0] leading-relaxed">
               This action cannot be undone. All imported comments, comment states, and voice configurations associated with your creator account will be permanently cleared.
             </p>
             <div className="flex justify-end gap-3 pt-2">

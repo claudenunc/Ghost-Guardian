@@ -48,7 +48,11 @@ export default function VoiceKnowledge() {
   return (
     <div className="space-y-6">
       {/* 3-Way Architectural Tab Switcher */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#141724] border border-white/5 overflow-x-auto">
+      <div
+        role="tablist"
+        aria-label="Voice knowledge navigation tabs"
+        className="flex items-center gap-1.5 p-1 rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-x-auto"
+      >
         {[
           { id: 'knowledge', label: '1. What I Know (Knowledge & Grounding)', icon: BookOpen },
           { id: 'boundaries', label: '2. What I Won’t Say (Hard Boundaries)', icon: Ban },
@@ -60,11 +64,14 @@ export default function VoiceKnowledge() {
             <button
               key={tab.id}
               type="button"
+              role="tab"
+              aria-selected={isActive}
+              aria-label={tab.label}
               onClick={() => setActiveTab(tab.id)}
               className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-semibold transition-all cursor-pointer border shrink-0 ${
                 isActive
-                  ? 'bg-[#1e2235] text-[#4de1dc] border-[#4de1dc]/40 shadow-[0_0_15px_rgba(77,225,220,0.15)]'
-                  : 'border-transparent text-[#8f97b0] hover:text-white hover:bg-white/5'
+                  ? 'bg-[#0200F1]/15 text-white border-[#0200F1]/40 shadow-[0_0_15px_rgba(2,0,241,0.2)]'
+                  : 'border-transparent text-[#a0a0a0] hover:text-white hover:bg-white/5'
               }`}
             >
               <Icon size={14} />

@@ -1,20 +1,15 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Search,
   Filter,
-  SlidersHorizontal,
   CheckCheck,
   RotateCcw,
-  Sparkles,
-  Shield,
   Video,
   Download,
-  AlertCircle,
   KeyRound,
   X,
-  ExternalLink,
 } from 'lucide-react';
-import { Button, Chip, EmptyState, SectionTitle } from '../components/guardian/atoms';
+import { Button, EmptyState, SectionTitle } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 import InboxPulse from '../components/comments/InboxPulse';
 import InboxLanes from '../components/comments/InboxLanes';
@@ -44,7 +39,7 @@ export default function CommentInbox() {
   const {
     comments,
     commenters,
-    videos,
+    videos = [],
     stateFor,
     approve,
     showToast,
@@ -55,12 +50,22 @@ export default function CommentInbox() {
   const [activeLane, setActiveLane] = useState('needs_you');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [search, setSearch] = useState('');
+  const [selectedVideoId, setSelectedVideoId] = useState('all');
 
   // YouTube live ingestion state
   const [videoUrlInput, setVideoUrlInput] = useState('');
   const [isLoadingYouTube, setIsLoadingYouTube] = useState(false);
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
+
+  useEffect(() => {
+    if (!showApiKeyModal) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setShowApiKeyModal(false);
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showApiKeyModal]);
 
   const detectedVideoId = useMemo(() => {
     return extractYouTubeVideoId(videoUrlInput);
@@ -184,6 +189,9 @@ export default function CommentInbox() {
           if (!textMatch && !authorMatch && !videoMatch && !responseMatch) return false;
         }
 
+        // Specific video filter
+        if (selectedVideoId !== 'all' && c.videoId !== selectedVideoId) return false;
+
         return true;
       })
       // Intelligent prioritization sorting
@@ -193,7 +201,7 @@ export default function CommentInbox() {
         if (priorityA !== priorityB) return priorityA - priorityB;
         return new Date(b.createdAt) - new Date(a.createdAt);
       });
-  }, [activeLane, categoryFilter, comments, commenters, search, stateFor, videos]);
+  }, [activeLane, categoryFilter, comments, commenters, search, selectedVideoId, stateFor, videos]);
 
   // Quick action: approve all ready drafts in review queue
   const handleApproveAllReady = () => {
@@ -213,8 +221,8 @@ export default function CommentInbox() {
         subtitle="Intelligent triage, human attention calibration, and protective buffering."
       />
 
-      {/* Real YouTube Ingestion Bar */}
-      <div className="rounded-xl border border-white/[0.08] bg-[#000000] p-4 sm:p-5 space-y-3 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+      {/* Real YouTube Multi-Video Ingestion & Monitor Bar */}
+      <div className="rounded-xl border border-white/10 bg-[#000000] p-4 sm:p-5 space-y-3.5 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span className="flex size-7 items-center justify-center rounded-lg bg-[#FF1400]/15 text-[#FF2A00] border border-[#FF1400]/30 shadow-[0_0_12px_rgba(255,20,0,0.25)]">
@@ -222,30 +230,47 @@ export default function CommentInbox() {
             </span>
             <div>
               <span className="font-display text-xs font-bold uppercase tracking-widest text-white block">
-                Live YouTube Comment Ingestion
+                YouTube Multi-Video Ingestion
               </span>
               <span className="text-[11px] text-[#a0a0a0]">
-                Extract comments directly from any YouTube video URL or ID into Guardian triage
+                Ingest any public video URL or ID on demand to expand your protected perimeter
               </span>
             </div>
           </div>
           {detectedVideoId && (
             <span className="inline-flex items-center gap-1.5 text-[11px] font-mono text-[#00FF66] bg-[#00FF66]/10 px-2.5 py-1 rounded-md border border-[#00FF66]/30 self-start sm:self-center">
-              Extracted Video ID: <strong>{detectedVideoId}</strong>
+              Target Video ID: <strong>{detectedVideoId}</strong>
             </span>
           )}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-1">
+        {/* URL Input Row with Enter key support */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 pt-0.5">
           <div className="relative flex-1">
             <input
               type="text"
               value={videoUrlInput}
               onChange={(e) => setVideoUrlInput(e.target.value)}
-              placeholder="Paste YouTube Video URL (e.g. https://www.youtube.com/watch?v=... or shorts / youtu.be) or 11-char Video ID"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLoadingYouTube && (detectedVideoId || videoUrlInput.trim())) {
+                  e.preventDefault();
+                  handleLoadRealComments();
+                }
+              }}
+              placeholder="Paste YouTube Video URL (e.g. watch?v=..., youtu.be, shorts) or 11-character Video ID"
               aria-label="YouTube Video URL or Video ID"
-              className="w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3.5 py-2 text-xs text-white placeholder:text-[#a0a0a0]/60 focus:border-[#0A00FF] focus:outline-none focus:ring-1 focus:ring-[#0A00FF] font-mono"
+              className="w-full rounded-lg border border-white/10 bg-[#0a0a0a] px-3.5 py-2.5 pr-8 text-xs text-white placeholder:text-[#a0a0a0]/60 focus:border-[#0200F1] focus:outline-none focus:ring-1 focus:ring-[#0200F1] font-mono"
             />
+            {videoUrlInput && (
+              <button
+                type="button"
+                onClick={() => setVideoUrlInput('')}
+                aria-label="Clear video input"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#a0a0a0] hover:text-white p-1"
+              >
+                <X size={13} />
+              </button>
+            )}
           </div>
 
           <Button
@@ -253,12 +278,52 @@ export default function CommentInbox() {
             variant="default"
             disabled={isLoadingYouTube || !videoUrlInput.trim()}
             onClick={() => handleLoadRealComments()}
-            className="shrink-0 gap-2 font-mono uppercase tracking-wider"
+            className="shrink-0 gap-2 font-mono uppercase tracking-wider py-2.5"
           >
             <Download size={13} className={isLoadingYouTube ? 'animate-bounce' : ''} />
-            <span>{isLoadingYouTube ? 'Fetching Comments...' : 'Load Real Comments'}</span>
+            <span>{isLoadingYouTube ? 'Ingesting Comments...' : 'Ingest Video Comments'}</span>
           </Button>
         </div>
+
+        {/* Monitored Videos Filter Strip */}
+        {videos.length > 0 && (
+          <div className="pt-2 border-t border-white/[0.06] flex flex-wrap items-center gap-2 text-xs">
+            <span className="text-[11px] font-mono uppercase tracking-wider text-[#a0a0a0] flex items-center gap-1.5 shrink-0">
+              <span className="size-1.5 rounded-full bg-[#00FF66]" />
+              Monitored Videos ({videos.length}):
+            </span>
+            <button
+              type="button"
+              onClick={() => setSelectedVideoId('all')}
+              className={`rounded-lg px-2.5 py-1 text-[11px] font-mono font-medium transition-colors cursor-pointer ${
+                selectedVideoId === 'all'
+                  ? 'bg-[#0200F1] text-white shadow-[0_0_8px_#0200F1]'
+                  : 'bg-white/5 text-[#a0a0a0] hover:text-white hover:bg-white/10'
+              }`}
+            >
+              All Videos ({comments.length})
+            </button>
+            {videos.map((vid) => {
+              const count = comments.filter((c) => c.videoId === vid.id).length;
+              const isSelected = selectedVideoId === vid.id;
+              return (
+                <button
+                  key={vid.id}
+                  type="button"
+                  onClick={() => setSelectedVideoId(isSelected ? 'all' : vid.id)}
+                  className={`rounded-lg px-2.5 py-1 text-[11px] font-mono transition-colors cursor-pointer truncate max-w-[200px] sm:max-w-[260px] ${
+                    isSelected
+                      ? 'bg-[#0200F1] text-white shadow-[0_0_8px_#0200F1]'
+                      : 'bg-white/5 text-[#a0a0a0] hover:text-white hover:bg-white/10'
+                  }`}
+                  title={vid.title || vid.id}
+                >
+                  {vid.title ? vid.title.replace(/^YouTube Video \((.+)\)$/, '$1') : vid.id} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* 1. The Pulse: Situation Overview answering the 3 questions */}
@@ -316,7 +381,7 @@ export default function CommentInbox() {
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search comments, users, videos..."
                 aria-label="Search comments"
-                className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/90 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/50 focus:border-[#4de1dc] focus:outline-none"
+                className="w-full rounded-xl border border-white/10 bg-[#0d0f17]/90 pl-9 pr-3.5 py-1.5 text-xs text-white placeholder:text-[#8f97b0]/50 focus:border-[#0200F1] focus:outline-none"
               />
             </div>
 
@@ -340,14 +405,14 @@ export default function CommentInbox() {
         <EmptyState>
           <div className="py-8 space-y-2">
             <p className="text-base text-white font-semibold">
-              {activeLane === 'needs_you' && '✨ Nothing requires your attention right now.'}
-              {activeLane === 'review_queue' && '✨ All pending drafts in review queue have been resolved.'}
-              {activeLane === 'human_moments' && '🤍 No pending Human Moments in this filter.'}
-              {activeLane === 'shield_vault' && '🛡️ Shield Vault is clear — no unhandled hostile comments.'}
+              {activeLane === 'needs_you' && 'Nothing requires your direct attention right now.'}
+              {activeLane === 'review_queue' && 'All pending drafts in review queue have been resolved.'}
+              {activeLane === 'human_moments' && 'No pending Human Moments in this filter.'}
+              {activeLane === 'shield_vault' && 'Shield Vault is clear — no unhandled hostile comments.'}
               {activeLane === 'handled' && 'No resolved comments found for this query.'}
               {activeLane === 'all' && 'No comments match your search criteria.'}
             </p>
-            <p className="text-xs text-[#8f97b0]">
+            <p className="text-xs text-[#a0a0a0]">
               Switch lanes or reset filters to explore other community conversations.
             </p>
             <div className="pt-2">
@@ -358,6 +423,7 @@ export default function CommentInbox() {
                   setActiveLane('all');
                   setCategoryFilter('all');
                   setSearch('');
+                  setSelectedVideoId('all');
                 }}
               >
                 <RotateCcw size={13} /> View All Comments
@@ -375,16 +441,22 @@ export default function CommentInbox() {
 
       {/* YouTube API Key Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="youtube-api-key-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90"
+        >
           <div className="w-full max-w-lg rounded-xl border border-white/20 bg-[#0a0a0a] p-6 space-y-4 shadow-[0_0_50px_rgba(0,0,0,0.9)] animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between pb-3 border-b border-white/[0.08]">
               <div className="flex items-center gap-2 text-white font-display font-bold text-base">
                 <KeyRound size={18} className="text-[#FF1400]" />
-                <span>YouTube Data API Key Required</span>
+                <span id="youtube-api-key-title">YouTube Data API Key Required</span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowApiKeyModal(false)}
+                aria-label="Close API key dialog"
                 className="text-[#a0a0a0] hover:text-white p-1 rounded-md"
               >
                 <X size={16} />
@@ -410,7 +482,7 @@ export default function CommentInbox() {
                   onChange={(e) => setApiKeyInput(e.target.value)}
                   placeholder="AIzaSy..."
                   aria-label="YouTube Data API Key"
-                  className="w-full rounded-lg border border-white/10 bg-black px-3 py-2 text-xs text-white font-mono focus:border-[#0A00FF] focus:outline-none"
+                  className="w-full rounded-lg border border-white/10 bg-black px-3 py-2 text-xs text-white font-mono focus:border-[#0200F1] focus:outline-none"
                 />
               </div>
 

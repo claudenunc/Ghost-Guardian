@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Copy, Check, X, FileDown, Sparkles } from 'lucide-react';
 import { Button } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
@@ -14,10 +14,19 @@ export default function MonthlyReportEmail({
   const { creator, showToast } = useGuardian();
   const [copied, setCopied] = useState(false);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  const creatorName = creator?.displayName || 'Alex Chen';
-  const channelName = creator?.channelName || 'The Long Signal';
+  const creatorName = creator?.displayName || 'Creator';
+  const channelName = creator?.channelName || 'Workspace';
   const currentMonth = new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
   const hours = timeSavedData?.totalHours || 47;
@@ -84,34 +93,40 @@ Top insights:
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-[#4de1dc]/30 bg-[#0f121d] shadow-[0_0_50px_rgba(77,225,220,0.15)] overflow-hidden">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="monthly-report-modal-title"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90 animate-in fade-in duration-200"
+    >
+      <div className="relative w-full max-w-2xl max-h-[90vh] flex flex-col rounded-2xl border border-[#0200F1]/30 bg-[#0a0a0a] shadow-[0_0_50px_rgba(2,0,241,0.15)] overflow-hidden">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#141829]">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/10 bg-[#000000]">
           <div className="flex items-center gap-2.5">
             <div className="p-2 rounded-xl bg-[#c084fc]/10 text-[#c084fc]">
               <Sparkles size={18} />
             </div>
             <div>
-              <h2 className="font-display text-base text-white font-bold">Monthly Deep-Dive Report Preview</h2>
-              <p className="text-xs text-[#8f97b0]">Comprehensive monthly executive value summary for creators</p>
+              <h2 id="monthly-report-modal-title" className="font-display text-base text-white font-bold">Monthly Deep-Dive Report Preview</h2>
+              <p className="text-xs text-[#a0a0a0]">Comprehensive monthly executive value summary for creators</p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-lg text-[#8f97b0] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+            aria-label="Close monthly report preview"
+            className="p-1.5 rounded-lg text-[#a0a0a0] hover:text-white hover:bg-white/10 transition-all cursor-pointer"
           >
             <X size={18} />
           </button>
         </div>
 
         {/* Email Metadata */}
-        <div className="px-6 py-3 border-b border-white/5 bg-[#121522] text-xs space-y-1">
-          <div className="flex items-center gap-2 text-[#8f97b0]">
-            <span className="font-semibold text-white">To:</span> {creatorName} &lt;alex@thesignal.fm&gt;
+        <div className="px-6 py-3 border-b border-white/5 bg-[#0a0a0a] text-xs space-y-1">
+          <div className="flex items-center gap-2 text-[#a0a0a0]">
+            <span className="font-semibold text-white">To:</span> {creatorName} &lt;{creator?.email || 'creator@workspace'}&gt;
           </div>
-          <div className="flex items-center gap-2 text-[#8f97b0]">
+          <div className="flex items-center gap-2 text-[#a0a0a0]">
             <span className="font-semibold text-white">Subject:</span>
             <span className="text-[#c084fc] font-medium">{emailSubject}</span>
           </div>
@@ -119,9 +134,9 @@ Top insights:
 
         {/* Email Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-5 text-sm text-[#e4e7f1]">
-          <div className="p-6 rounded-2xl border border-white/10 bg-[#161a2b] shadow-inner space-y-5 font-sans leading-relaxed">
+          <div className="p-6 rounded-2xl border border-white/10 bg-[#000000] shadow-inner space-y-5 font-sans leading-relaxed">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <span className="font-display text-sm font-bold tracking-wider text-white">🛡️ GHOST GUARDIAN</span>
+              <span className="font-display text-sm font-bold tracking-wider text-white">GHOST GUARDIAN</span>
               <span className="text-xs text-[#c084fc] font-semibold">{currentMonth} Executive Report</span>
             </div>
 

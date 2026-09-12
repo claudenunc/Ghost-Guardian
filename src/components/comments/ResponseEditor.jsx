@@ -95,9 +95,9 @@ export default function ResponseEditor({ comment }) {
             size="sm"
             variant="outline"
             onClick={() => guardian.regenerate(comment.id)}
-            title="Cycle to next tone draft"
+            title="Generate a fresh AI draft in your voice"
           >
-            <RefreshCw size={14} /> Regenerate
+            <RefreshCw size={14} /> {state.responseText ? 'Regenerate' : 'Generate Draft'}
           </Button>
 
           <Button

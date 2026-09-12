@@ -27,7 +27,9 @@ export const AI_CLASSIFICATIONS = new Set([
 ]);
 
 const PROTECTED = new Set(['THREAT', 'SENSITIVE', 'SENSITIVE_CRITICAL', 'sensitive_critical']);
-const NEVER_DRAFT = new Set(['HARASSMENT', 'HATE', 'hate', 'SCAM', 'SPAM', 'TROLLING']);
+// Trolls and rude/harassing comments now get a witty, dignified clapback draft
+// ("put them in their place, respectfully"). Hate speech, scams and spam never do.
+const NEVER_DRAFT = new Set(['HATE', 'hate', 'SCAM', 'SPAM']);
 const MIN_AI_CONFIDENCE = 0.6;
 
 export function attributesForClassification(classification) {
@@ -160,9 +162,9 @@ export function shouldDraftFor(comment) {
   // Never draft for crisis/sensitive, hostile, or anything flagged for a human.
   if (PROTECTED.has(comment.classification) || PROTECTED.has(cls) || comment.signals?.humanMoment) return false;
   if (NEVER_DRAFT.has(comment.classification) || NEVER_DRAFT.has(cls)) return false;
-  if (comment.requiresHumanReview) return false;
-  // Draft for everything else (praise, questions, general comments, criticism…),
-  // regardless of the rule engine's exact recommendedAction wording.
+  // Draft for everything else (praise, questions, general comments, criticism,
+  // trolling, harassment…). "Needs review" comments still get a draft — the
+  // creator reviews it — since the dangerous categories are already excluded above.
   return true;
 }
 

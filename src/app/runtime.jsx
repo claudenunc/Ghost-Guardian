@@ -131,7 +131,7 @@ function reducer(state, action) {
     case 'SET_AI_DRAFT': {
       // Auto-generated draft in the creator's voice. Stored on the comment and
       // primed as the response only if the creator hasn't already edited it.
-      const { commentId, tone = 'warm', text } = action.payload;
+      const { commentId, tone = 'warm', text, force = false } = action.payload;
       if (!text) return state;
       const newComments = (state.comments || []).map((c) =>
         c.id === commentId
@@ -139,11 +139,13 @@ function reducer(state, action) {
           : c
       );
       const current = state.commentStates[commentId] || {};
-      const nextState = {
-        ...current,
-        activeTone: current.activeTone || tone,
-        responseText: current.wasEdited ? current.responseText : (current.responseText || text),
-      };
+      const nextState = force
+        ? { ...current, activeTone: tone, responseText: text, wasEdited: false }
+        : {
+            ...current,
+            activeTone: current.activeTone || tone,
+            responseText: current.wasEdited ? current.responseText : (current.responseText || text),
+          };
       return {
         ...state,
         comments: newComments,
@@ -241,10 +243,12 @@ function reducer(state, action) {
 
       freshComments.forEach((c) => {
         const alreadyReplied = Boolean(c.ownerReplied);
+        const cls = String(c.classification || '').toUpperCase();
+        // Silence only spam/scam (and explicit hides). Trolls/rude comments stay
+        // actionable so their clapback draft surfaces for review.
+        const silence = cls === 'SPAM' || cls === 'SCAM' || c.recommendedAction === 'hide';
         newStates[c.id] = {
-          status: alreadyReplied
-            ? 'responded'
-            : (c.recommendedAction === 'silence' || c.recommendedAction === 'hide' ? 'silenced' : 'pending'),
+          status: alreadyReplied ? 'responded' : (silence ? 'silenced' : 'pending'),
           activeTone: 'warm',
           responseText: c.drafts?.warm || c.drafts?.calm || '',
           wasEdited: false,
@@ -494,6 +498,24 @@ export function ApplicationProvider({ children }) {
     }
   }, [state.voice, state.learning]);
 
+  const regenerate = useCallback(async (commentId) => {
+    const comment = (state.comments || []).find((c) => c.id === commentId);
+    if (!comment) return;
+    showToast('Drafting a reply in your voice…', 'info');
+    const result = await generateAiResponse({
+      commentText: comment.text,
+      commentClassification: comment.classification,
+      creatorVoiceProfile: state.voice,
+      learningExamples: state.learning,
+    });
+    if (result?.responseText && !result.error) {
+      dispatch({ type: 'SET_AI_DRAFT', payload: { commentId, text: result.responseText, force: true } });
+      showToast('Draft ready.', 'success');
+    } else {
+      showToast(result?.error || 'Could not generate a draft. Please try again.', 'error');
+    }
+  }, [state.comments, state.voice, state.learning, generateAiResponse, showToast]);
+
   const classifyComment = useCallback(async (commentText) => {
     try {
       const res = await fetch('/api/classify-comment', {
@@ -554,7 +576,7 @@ export function ApplicationProvider({ children }) {
     reject,
     useTone: (commentId, tone) => dispatch({ type: 'USE_TONE', payload: { commentId, tone } }),
     setResponse: (commentId, text) => dispatch({ type: 'SET_RESPONSE_TEXT', payload: { commentId, text } }),
-    regenerate: (commentId) => dispatch({ type: 'REGENERATE', payload: commentId }),
+    regenerate,
     saveAsExample: (commentId) => dispatch({ type: 'SAVE_AS_EXAMPLE', payload: commentId }),
     updateOpportunityStatus: (id, status) => dispatch({ type: 'UPDATE_OPPORTUNITY_STATUS', payload: { id, status } }),
     updatePolicy: (updates, reason) => dispatch({ type: 'UPDATE_POLICY', payload: { updates, reason } }),
@@ -568,7 +590,7 @@ export function ApplicationProvider({ children }) {
     importWorkspace,
     showToast,
     dispatch,
-  }), [approve, exportData, importWorkspace, signIn, register, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments, ingestComments]);
+  }), [approve, exportData, importWorkspace, signIn, register, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments, ingestComments, regenerate]);
 
   return <ApplicationContext.Provider value={value}>{children}</ApplicationContext.Provider>;
 }

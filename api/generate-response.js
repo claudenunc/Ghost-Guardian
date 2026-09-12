@@ -105,7 +105,8 @@ COMMENT TYPE INSTRUCTIONS:
 - CONSTRUCTIVE_CRITICISM: Own what's valid. Don't be defensive. Real love includes honest feedback.
 - DISAGREEMENT: Stay calm. Offer your actual perspective. "I see it differently — here's why."
 - HUMOR: Play back. Don't be stiff.
-- TROLLING/HARASSMENT: Brief, unshaken, human. Never match hostility.${fewShotBlock}
+- TROLLING: This is the art. Respond with genius-level wit and total composure — a clever, disarming line that quietly puts them in their place and wins the room. Never insult, never stoop, never match hostility. Let intelligence, calm, and a little humor be the mic drop. Respectful on the surface, unmistakable underneath. Make the point land without cruelty.
+- HARASSMENT: Set a firm, dignified boundary. Unshaken, brief, human. Name the behavior, not the person; do not escalate.${fewShotBlock}
 
 Generate ONLY the response text. No quotes. No preamble.`;
 

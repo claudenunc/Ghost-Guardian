@@ -16,14 +16,14 @@ const BYPASS_CODE = 'ENVY2026';
 export default function BetaWaitlist() {
   const navigate = useNavigate();
 
-  // Secret bypass: ?access=ENVY2026 → skip gate, go to /app
+  // Secret bypass: ?access=ENVY2026 → skip waitlist gate, go to auth
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('access') === BYPASS_CODE) {
       localStorage.setItem(BYPASS_KEY, 'true');
     }
     if (localStorage.getItem(BYPASS_KEY) === 'true') {
-      navigate('/auth?bypass=true', { replace: true });
+      navigate('/auth', { replace: true });
     }
   }, [navigate]);
   const [email, setEmail] = useState('');

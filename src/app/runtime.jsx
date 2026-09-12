@@ -11,9 +11,32 @@ import { createDemoPlatformAdapter, createProductionPlatformAdapter } from '../d
 
 const ApplicationContext = createContext(null);
 
+/**
+ * Creates a properly shaped empty workspace for production mode.
+ * All keys must exist so components don't crash on undefined access.
+ */
+function createEmptyProductionWorkspace() {
+  return {
+    creator: {},
+    videos: [],
+    comments: [],
+    commenters: [],
+    commentStates: {},
+    voice: { warmth: 75, directness: 65, humor: 40, formality: 40 },
+    settings: { mode: 'balanced', paused: false },
+    policy: {},
+    knowledge: [],
+    learning: [],
+    activity: [],
+    contentOpportunities: [],
+    communityHealth: {},
+    weeklyDigest: {},
+  };
+}
+
 function createServices(mode) {
   const isDemo = mode === 'demo';
-  const isProduction = mode === 'production' || import.meta.env?.VITE_GHOST_GUARDIAN_RUNTIME === 'production';
+  const isProduction = mode === 'production';
   return {
     mode,
     auth: isDemo ? createDevelopmentAuthAdapter() : createSupabaseAuthAdapter(),
@@ -29,7 +52,9 @@ function createServices(mode) {
 }
 
 function createInitialState(services) {
-  const fixture = services.mode === 'demo' ? services.repositories.workspace.create() : {};
+  const fixture = services.mode === 'demo'
+    ? services.repositories.workspace.create()
+    : createEmptyProductionWorkspace();
   const saved = services.persistence.load();
   const workspace = saved
     ? { ...fixture, ...saved, commentStates: { ...fixture.commentStates, ...saved.commentStates } }
@@ -61,10 +86,10 @@ function reducer(state, action) {
       };
     case 'ADD_KNOWLEDGE': {
       const item = { ...action.payload, id: `knowledge-${Date.now()}`, createdAt: new Date().toISOString() };
-      return { ...state, knowledge: [item, ...state.knowledge] };
+      return { ...state, knowledge: [item, ...(state.knowledge || [])] };
     }
     case 'REMOVE_KNOWLEDGE':
-      return { ...state, knowledge: state.knowledge.filter((item) => item.id !== action.payload) };
+      return { ...state, knowledge: (state.knowledge || []).filter((item) => item.id !== action.payload) };
     case 'SET_COMMENT_STATUS': {
       const { commentId, status, label, detail = '', platformAction = 'none' } = action.payload;
       const activity = {
@@ -77,10 +102,10 @@ function reducer(state, action) {
         platformAction,
       };
       const updated = updateCommentState(state, commentId, { status, updatedAt: activity.timestamp });
-      return { ...updated, activity: [activity, ...state.activity].slice(0, 200) };
+      return { ...updated, activity: [activity, ...(state.activity || [])].slice(0, 200) };
     }
     case 'USE_TONE': {
-      const comment = state.comments.find((item) => item.id === action.payload.commentId);
+      const comment = (state.comments || []).find((item) => item.id === action.payload.commentId);
       return updateCommentState(state, action.payload.commentId, {
         activeTone: action.payload.tone,
         responseText: comment?.drafts?.[action.payload.tone] || '',
@@ -90,7 +115,7 @@ function reducer(state, action) {
     case 'SET_RESPONSE_TEXT':
       return updateCommentState(state, action.payload.commentId, { responseText: action.payload.text, wasEdited: true });
     case 'REGENERATE': {
-      const comment = state.comments.find((item) => item.id === action.payload);
+      const comment = (state.comments || []).find((item) => item.id === action.payload);
       const current = state.commentStates[action.payload] || {};
       const tones = ['calm', 'direct', 'warm', 'humorous'].filter((tone) => comment?.drafts?.[tone]);
       const nextTone = tones[(tones.indexOf(current.activeTone) + 1) % tones.length] || 'warm';
@@ -103,7 +128,7 @@ function reducer(state, action) {
       });
     }
     case 'SAVE_AS_EXAMPLE': {
-      const comment = state.comments.find((item) => item.id === action.payload);
+      const comment = (state.comments || []).find((item) => item.id === action.payload);
       const current = state.commentStates[action.payload] || {};
       const example = {
         id: `example-${Date.now()}`,
@@ -112,7 +137,7 @@ function reducer(state, action) {
         createdAt: new Date().toISOString(),
       };
       const updated = updateCommentState(state, action.payload, { savedAsExample: true });
-      return { ...updated, learning: [example, ...state.learning] };
+      return { ...updated, learning: [example, ...(state.learning || [])] };
     }
     case 'ADD_LEARNING_EXAMPLE': {
       const example = {
@@ -120,7 +145,7 @@ function reducer(state, action) {
         id: action.payload.id || `example-${Date.now()}`,
         createdAt: action.payload.createdAt || new Date().toISOString(),
       };
-      return { ...state, learning: [example, ...state.learning] };
+      return { ...state, learning: [example, ...(state.learning || [])] };
     }
     case 'UPDATE_OPPORTUNITY_STATUS': {
       const { id, status } = action.payload;
@@ -246,6 +271,10 @@ export function ApplicationProvider({ children }) {
   }, [state.commentStates]);
 
   const startDemo = useCallback(() => {
+    if (services.mode !== 'demo') {
+      console.warn('startDemo is not available in production mode.');
+      return null;
+    }
     const session = services.auth.signIn();
     dispatch({ type: 'SET_SESSION', payload: session });
     return session;
@@ -275,16 +304,27 @@ export function ApplicationProvider({ children }) {
   const approve = useCallback((commentId) => {
     const current = stateFor(commentId);
     void services.platform.replyToComment(commentId, current.responseText);
-    setStatus(commentId, current.wasEdited ? 'edited' : 'approved', 'Approved fixture draft in Demo Mode', 'Simulated approval only — no message was sent to YouTube.', 'simulated_reply');
-    showToast('Demo approval recorded. No reply was sent to YouTube.', 'info');
+    const isDemo = services.mode === 'demo';
+    setStatus(
+      commentId,
+      current.wasEdited ? 'edited' : 'approved',
+      isDemo ? 'Approved fixture draft in Demo Mode' : 'Response approved',
+      isDemo ? 'Simulated approval only — no message was sent to YouTube.' : 'Response published.',
+      isDemo ? 'simulated_reply' : 'reply',
+    );
+    showToast(
+      isDemo ? 'Demo approval recorded. No reply was sent to YouTube.' : 'Response approved and published.',
+      isDemo ? 'info' : 'success',
+    );
   }, [services, setStatus, showToast, stateFor]);
 
   const reject = useCallback((commentId) => {
-    setStatus(commentId, 'rejected', 'Rejected fixture draft', 'No reply was sent.', 'none');
+    setStatus(commentId, 'rejected', 'Draft rejected', 'No reply was sent.', 'none');
     showToast('Draft rejected. Nothing was sent.', 'info');
   }, [setStatus, showToast]);
 
   const resetDemo = useCallback(() => {
+    if (services.mode !== 'demo') return;
     services.persistence.clear();
     dispatch({ type: 'RESET_WORKSPACE', payload: services.repositories.workspace.create() });
     showToast('Demo fixture workspace restored.', 'info');

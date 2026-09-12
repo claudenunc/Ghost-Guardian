@@ -19,7 +19,9 @@ const Community = lazy(() => import('./pages/Community'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Settings = lazy(() => import('./pages/Settings'));
 
-const isProduction = import.meta.env.VITE_GHOST_GUARDIAN_RUNTIME === 'production';
+import { runtimeConfig } from './app/config';
+
+const isProduction = runtimeConfig.mode === 'production';
 
 function ScrollToTop({ children }) {
   const { pathname } = useLocation();

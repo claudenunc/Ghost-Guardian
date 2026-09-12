@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { Eye, Ghost, LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus } from 'lucide-react';
 import { Button, GhostMark } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 
 export default function Auth() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
-  const { isAuthenticated, runtime, startDemo, signIn, register } = useGuardian();
+  const { isAuthenticated, signIn, register } = useGuardian();
   const next = params.get('next') || '/app';
 
   const [activeTab, setActiveTab] = useState('signin');
@@ -22,14 +22,6 @@ export default function Auth() {
   useEffect(() => {
     if (isAuthenticated) navigate(next, { replace: true });
   }, [isAuthenticated, navigate, next]);
-
-  // BetaWaitlist bypass: ?bypass=true → start demo and go straight in
-  useEffect(() => {
-    if (params.get('bypass') === 'true') {
-      startDemo();
-      navigate(next, { replace: true });
-    }
-  }, [params, startDemo, navigate, next]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -79,11 +71,6 @@ export default function Auth() {
     } finally {
       setLoading(false);
     }
-  };
-
-  const openDemo = () => {
-    startDemo();
-    navigate(next, { replace: true });
   };
 
   const inputClass = 'w-full bg-[#0a0a0a] border border-white/20 rounded-lg px-4 py-3 text-white font-mono text-sm focus:border-[#0200F1] focus:outline-none transition-colors placeholder:text-white/25';
@@ -271,19 +258,8 @@ export default function Auth() {
           </form>
         )}
 
-        {/* Demo Access Link */}
-        <div className="mt-6 pt-4 border-t border-white/10 text-center">
-          <button
-            type="button"
-            onClick={openDemo}
-            className="text-xs font-mono text-[#a0a0a0] hover:text-[#4de1dc] transition-colors cursor-pointer"
-          >
-            Just exploring? → <span className="underline">Open demo workspace</span>
-          </button>
-        </div>
-
         {/* Return Home */}
-        <Link className="button button-secondary text-center mt-3" to="/">Return to home</Link>
+        <Link className="button button-secondary text-center mt-6" to="/">Return to home</Link>
       </section>
     </main>
   );

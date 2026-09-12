@@ -1,17 +1,72 @@
-import React from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Video,
-  CheckCircle2,
   Shield,
   Clock,
-  Sparkles,
-  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { Chip, Button } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
+import {
+  startYouTubeConnect,
+  getYouTubeConnection,
+  disconnectYouTube,
+} from '../../lib/youtubeConnect';
 
 export default function PlatformConnections() {
-  const { creator, videos } = useGuardian();
+  const { creator, videos, showToast } = useGuardian();
+
+  const [conn, setConn] = useState({ connected: false, channelTitle: null });
+  const [checking, setChecking] = useState(true);
+  const [busy, setBusy] = useState(false);
+
+  const refresh = useCallback(async () => {
+    setChecking(true);
+    const result = await getYouTubeConnection();
+    setConn(result);
+    setChecking(false);
+  }, []);
+
+  useEffect(() => {
+    refresh();
+    // Surface the result of the OAuth round-trip if we just came back from Google.
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('youtube');
+      if (status === 'connected') {
+        showToast?.('YouTube channel connected. You can now publish replies.', 'success');
+      } else if (status === 'error') {
+        showToast?.('YouTube connection did not complete. Please try again.', 'error');
+      }
+      if (status) {
+        params.delete('youtube');
+        const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+        window.history.replaceState({}, '', clean);
+      }
+    }
+  }, [refresh, showToast]);
+
+  const handleConnect = async () => {
+    setBusy(true);
+    try {
+      await startYouTubeConnect(); // redirects the browser
+    } catch (err) {
+      showToast?.(err.message || 'Could not start the connection.', 'error');
+      setBusy(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setBusy(true);
+    const ok = await disconnectYouTube();
+    if (ok) {
+      setConn({ connected: false, channelTitle: null });
+      showToast?.('YouTube channel disconnected.', 'info');
+    } else {
+      showToast?.('Could not disconnect. Try again.', 'error');
+    }
+    setBusy(false);
+  };
 
   return (
     <section className="ghost-panel p-6 sm:p-8 space-y-6">
@@ -21,7 +76,7 @@ export default function PlatformConnections() {
             Platform Connections
           </h3>
           <p className="text-xs text-[#a0a0a0] mt-0.5">
-            Connect your public content channels to feed the Ghost Guardian triage engine.
+            Connect your channel to import comments and publish approved replies.
           </p>
         </div>
         <Chip variant="outline" className="border-white/10 text-white font-mono">
@@ -29,7 +84,7 @@ export default function PlatformConnections() {
         </Chip>
       </div>
 
-      {/* 1. Active: YouTube Public Video Ingestion */}
+      {/* 1. Public video ingestion (always available via API key) */}
       <div className="rounded-xl border border-[#00FF66]/30 bg-[#000000] p-5 sm:p-6 space-y-5 shadow-[0_0_24px_rgba(0,255,102,0.06)]">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -46,79 +101,88 @@ export default function PlatformConnections() {
                 </Chip>
               </div>
               <p className="text-xs text-[#a0a0a0] mt-1 font-mono">
-                Channel: <strong className="text-white">{creator?.channelName || 'Connected Channel'}</strong> ({creator?.handle || '@creator'})
+                Import comments from any public video by URL or ID.
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Chip variant="outline" className="text-xs border-white/10 font-mono text-[#a0a0a0]">
-              {videos?.length || 0} Videos Tracked
-            </Chip>
-          </div>
-        </div>
-
-        <div className="grid gap-3 pt-4 border-t border-white/[0.08] sm:grid-cols-2 text-xs text-[#a0a0a0]">
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#a0a0a0] block font-mono">
-              Access Level
-            </span>
-            <span className="text-white font-medium mt-0.5 block">
-              Public Comment Ingestion via YouTube Data API v3
-            </span>
-          </div>
-
-          <div>
-            <span className="text-[10px] uppercase font-bold tracking-widest text-[#a0a0a0] block font-mono">
-              Approval Flow
-            </span>
-            <span className="text-[#00FF66] font-medium mt-0.5 block">
-              Copilot Mode — 1-click clipboard copy with direct video link
-            </span>
-          </div>
+          <Chip variant="outline" className="text-xs border-white/10 font-mono text-[#a0a0a0]">
+            {videos?.length || 0} Videos Tracked
+          </Chip>
         </div>
       </div>
 
-      {/* 2. Channel OAuth Direct Publishing Connection (Truthful state: Coming soon) */}
-      <div className="rounded-xl border border-white/10 bg-[#050505] p-5 sm:p-6 space-y-4">
+      {/* 2. Channel OAuth — real connect / disconnect for direct publishing */}
+      <div
+        className={`rounded-xl border p-5 sm:p-6 space-y-4 ${
+          conn.connected
+            ? 'border-[#0200F1]/40 bg-[#000000] shadow-[0_0_24px_rgba(2,0,241,0.08)]'
+            : 'border-white/10 bg-[#050505]'
+        }`}
+      >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="size-12 rounded-xl bg-white/5 text-[#a0a0a0] flex items-center justify-center shrink-0 border border-white/10">
+            <div
+              className={`size-12 rounded-xl flex items-center justify-center shrink-0 border ${
+                conn.connected
+                  ? 'bg-[#0200F1]/15 text-[#0200F1] border-[#0200F1]/30'
+                  : 'bg-white/5 text-[#a0a0a0] border-white/10'
+              }`}
+            >
               <Shield size={24} />
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="font-display text-base text-white font-bold tracking-wider">
-                  Direct Channel OAuth (Auto-Publishing)
+                  Direct Channel Connection
                 </h4>
-                <Chip variant="outline" className="text-[#a0a0a0] border-white/10">
-                  Coming in publish release
-                </Chip>
+                {checking ? (
+                  <Chip variant="outline" className="text-[#a0a0a0] border-white/10">Checking…</Chip>
+                ) : conn.connected ? (
+                  <Chip variant="positive" className="bg-[#00FF66]/10 text-[#00FF66] border-[#00FF66]/30">
+                    <span className="pulse-dot bg-[#00FF66] mr-1" /> Connected
+                  </Chip>
+                ) : (
+                  <Chip variant="outline" className="text-[#a0a0a0] border-white/10">Not connected</Chip>
+                )}
               </div>
               <p className="text-xs text-[#a0a0a0] mt-1">
-                Full two-way channel OAuth allowing Ghost Guardian to post approved replies straight to YouTube threads.
+                {conn.connected
+                  ? <>Publishing as <strong className="text-white">{conn.channelTitle || creator?.channelName || 'your channel'}</strong>. Approved replies post straight to the thread.</>
+                  : 'Connect your channel so approved replies post directly to YouTube.'}
               </p>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {conn.connected ? (
+              <Button variant="outline" onClick={handleDisconnect} disabled={busy} className="text-xs">
+                {busy ? <Loader2 size={14} className="animate-spin" /> : 'Disconnect'}
+              </Button>
+            ) : (
+              <Button onClick={handleConnect} disabled={busy || checking} className="text-xs">
+                {busy ? <Loader2 size={14} className="animate-spin" /> : 'Connect YouTube'}
+              </Button>
+            )}
           </div>
         </div>
 
         <div className="rounded-lg border border-white/[0.08] bg-[#000000] p-3.5 flex items-start gap-3 text-xs text-[#a0a0a0]">
           <Clock size={16} className="text-[#0200F1] shrink-0 mt-0.5" />
           <span className="leading-relaxed">
-            <strong className="text-white">Safety Philosophy:</strong> In the current beta, approved replies are copied to your clipboard and opened directly on YouTube. Ghost Guardian will never auto-post comments to your channel without your explicit confirmation.
+            <strong className="text-white">Nothing posts without your approval.</strong> Ghost Guardian only publishes a reply when you press Approve on a draft you've reviewed. Your channel tokens are stored securely on the server and never in your browser.
           </span>
         </div>
       </div>
 
-      {/* Planned Platforms Suite */}
+      {/* Planned platforms */}
       <div className="space-y-3 pt-2">
         <span className="text-xs font-bold uppercase tracking-widest text-[#a0a0a0] block font-mono">
           Upcoming Platform Integrations
         </span>
-
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {[
-            { name: 'Instagram Threads & Comments', desc: 'Direct Creator DM & Post ingestion' },
+            { name: 'Instagram Threads & Comments', desc: 'Direct creator DM & post ingestion' },
             { name: 'TikTok Creator Hub', desc: 'High-velocity short-form triage' },
             { name: 'X / Twitter Mentions', desc: 'Provocation filtering and quote analysis' },
             { name: 'Reddit Community Threads', desc: 'Subreddit moderation and question mining' },

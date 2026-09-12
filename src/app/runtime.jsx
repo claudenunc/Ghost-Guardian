@@ -8,6 +8,7 @@ import { createDemoWorkspace } from '../fixtures/demoWorkspace';
 import { createWorkspaceExportPayload } from '../domain/settings/workspaceContracts';
 import { createDemoGuardianProvider, createProductionGuardianProvider } from '../domain/guardian';
 import { createDemoPlatformAdapter, createProductionPlatformAdapter } from '../domain/platform/platformAdapter';
+import { publishYouTubeReply } from '../lib/youtubeConnect';
 
 const ApplicationContext = createContext(null);
 
@@ -359,34 +360,54 @@ export function ApplicationProvider({ children }) {
     dispatch({ type: 'SET_COMMENT_STATUS', payload: { commentId, status, label, detail, platformAction } });
   }, []);
 
-  const approve = useCallback((commentId) => {
+  const approve = useCallback(async (commentId) => {
     const current = stateFor(commentId);
     const comment = (state.comments || []).find((c) => c.id === commentId);
+    const isDemo = services.mode === 'demo';
+    const text = current.responseText;
+    const parentId = comment?.externalId || (comment?.id?.startsWith('yt-') ? comment.id.slice(3) : null);
+    const finalStatus = current.wasEdited ? 'edited' : 'approved';
 
-    if (typeof navigator !== 'undefined' && navigator.clipboard && current.responseText) {
-      navigator.clipboard.writeText(current.responseText).catch(() => {});
+    // Production + a real YouTube comment + a signed-in creator → try to post
+    // the reply directly. Only ever runs on this explicit Approve action.
+    if (!isDemo && parentId && text && text.trim()) {
+      const result = await publishYouTubeReply({ parentId, text });
+      if (result?.success) {
+        setStatus(commentId, finalStatus, 'Reply published to YouTube', 'Posted directly to the thread.', 'youtube_reply');
+        showToast('Reply published to YouTube.', 'success');
+        return;
+      }
+      // Any error other than "not connected" is worth surfacing before falling back.
+      if (result && result.code !== 'not_connected' && result.error) {
+        showToast(result.error, 'error');
+      }
     }
 
+    // Fallback (demo, not connected, or publish failed): copy + open the thread
+    // so the creator can post manually.
+    if (typeof navigator !== 'undefined' && navigator.clipboard && text) {
+      navigator.clipboard.writeText(text).catch(() => {});
+    }
     if (typeof window !== 'undefined' && comment?.videoId) {
-      const extId = comment.externalId || (comment.id.startsWith('yt-') ? comment.id.slice(3) : null);
-      const permalink = extId
-        ? `https://www.youtube.com/watch?v=${comment.videoId}&lc=${extId}`
+      const permalink = parentId
+        ? `https://www.youtube.com/watch?v=${comment.videoId}&lc=${parentId}`
         : `https://www.youtube.com/watch?v=${comment.videoId}`;
       try {
         window.open(permalink, '_blank', 'noopener,noreferrer');
       } catch (_) {}
     }
 
-    const isDemo = services.mode === 'demo';
     setStatus(
       commentId,
-      current.wasEdited ? 'edited' : 'approved',
+      finalStatus,
       isDemo ? 'Approved fixture draft in Demo Mode' : 'Response approved',
       isDemo ? 'Simulated approval only — no message was sent to YouTube.' : 'Approved. Copied for posting on YouTube.',
       'clipboard_copy',
     );
     showToast(
-      isDemo ? 'Demo approval recorded. Copied to clipboard.' : 'Response approved and copied to clipboard.',
+      isDemo
+        ? 'Demo approval recorded. Copied to clipboard.'
+        : 'Approved and copied. Connect your channel in Settings to post replies automatically.',
       'success',
     );
   }, [services.mode, state.comments, stateFor, setStatus, showToast]);

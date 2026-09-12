@@ -12,6 +12,7 @@ import {
 import { GhostMark, Chip, Button } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 import { extractYouTubeVideoId } from '../lib/youtubeUtils';
+import { startYouTubeConnect } from '../lib/youtubeConnect';
 
 const STORAGE_KEY = 'ghost-guardian-onboarding-step';
 
@@ -53,6 +54,18 @@ export default function Onboarding() {
   const [videoUrl, setVideoUrl] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState('');
+
+  // Step 3: connecting the channel via OAuth (redirects to Google → /app/inbox)
+  const [connecting, setConnecting] = useState(false);
+  const handleConnectChannel = async () => {
+    setConnecting(true);
+    try {
+      await startYouTubeConnect();
+    } catch (err) {
+      showToast(err.message || 'Could not start the connection.', 'error');
+      setConnecting(false);
+    }
+  };
 
   // Save step to localStorage
   useEffect(() => {
@@ -409,19 +422,16 @@ export default function Onboarding() {
                 </div>
 
                 <div
-                  className="w-full p-4 rounded-2xl border border-white/10 bg-[#050505] text-left flex items-center justify-between opacity-80"
+                  className="w-full p-4 rounded-2xl border border-[#0200F1] bg-[#0200F1]/10 shadow-[0_0_20px_rgba(2,0,241,0.15)] text-left flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="size-11 rounded-xl bg-[#1e2235] text-[#8f97b0] flex items-center justify-center shrink-0">
-                      <GhostMark className="size-5" />
+                    <div className="size-11 rounded-xl bg-[#0200F1]/15 text-[#0200F1] flex items-center justify-center shrink-0 border border-[#0200F1]/30">
+                      <ShieldCheck size={22} />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-display text-sm font-bold text-white">Channel OAuth Connection</h4>
-                        <Chip variant="outline" className="text-[10px] text-[#8f97b0]">Coming Soon</Chip>
-                      </div>
+                      <h4 className="font-display text-sm font-bold text-white">Connect Your Channel</h4>
                       <p className="text-xs text-[#8f97b0] mt-0.5">
-                        Direct automated publishing via channel OAuth will be available with the publish release.
+                        Authorize Ghost Guardian to load all your videos and publish approved replies. Nothing posts without your approval.
                       </p>
                     </div>
                   </div>
@@ -430,28 +440,27 @@ export default function Onboarding() {
 
               {/* Helper note */}
               <p className="text-xs text-[#8f97b0]">
-                In the next step, you can paste any public video URL to import comments immediately.
+                Connecting takes you to Google to authorize, then opens your video list so you can pick a video to protect.
               </p>
 
               {/* Actions */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleSkipToStep(4)}
-                  className="text-xs text-[#8f97b0] hover:text-white underline cursor-pointer"
-                >
-                  Skip to Next Step
-                </button>
-
+              <div className="pt-2 flex flex-col sm:flex-row items-center justify-end gap-3">
                 <Button
                   size="lg"
-                  onClick={handleNext}
+                  onClick={handleConnectChannel}
+                  disabled={connecting}
                   className="w-full sm:w-auto gap-2 justify-center"
                 >
-                  <span>Continue to First Video</span>
-                  <ArrowRight size={16} />
+                  {connecting ? <Loader2 size={16} className="animate-spin" /> : <Video size={16} />}
+                  <span>{connecting ? 'Opening Google…' : 'Connect YouTube Channel'}</span>
                 </Button>
               </div>
+              <p className="text-center text-xs text-[#8f97b0]">
+                Prefer to explore first?{' '}
+                <button type="button" onClick={() => handleSkipToStep(4)} className="text-[#0200F1] hover:underline cursor-pointer">
+                  Import a public video by URL
+                </button>
+              </p>
             </div>
           )}
 

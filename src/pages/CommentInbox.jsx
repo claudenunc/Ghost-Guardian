@@ -18,6 +18,7 @@ import InboxLanes from '../components/comments/InboxLanes';
 import CommentCard from '../components/comments/CommentCard';
 import { extractYouTubeVideoId, normalizeIncomingYouTubeComment } from '../lib/youtubeUtils';
 import { getYouTubeConnection, listMyVideos, startYouTubeConnect } from '../lib/youtubeConnect';
+import { shouldDraftFor, runWithConcurrency } from '../lib/commentPipeline';
 import {
   getCommentPriority,
   isHandled,
@@ -43,11 +44,14 @@ export default function CommentInbox() {
     comments,
     commenters,
     videos = [],
+    voice,
     stateFor,
     approve,
     showToast,
     fetchYouTubeComments,
     ingestComments,
+    generateAiResponse,
+    dispatch,
   } = useGuardian();
 
   const [activeLane, setActiveLane] = useState('needs_you');
@@ -173,12 +177,31 @@ export default function CommentInbox() {
       });
 
       showToast(
-        `Imported ${normalized.length} comments${knownTitle ? ` from "${knownTitle}"` : ''}.`,
+        `Imported ${normalized.length} comments${knownTitle ? ` from "${knownTitle}"` : ''}. Drafting replies in your voice…`,
         'success'
       );
       setActiveLane('all');
       setSelectedVideoId(videoId);
       setShowApiKeyModal(false);
+
+      // Auto-draft replies in the creator's voice for eligible comments, in the
+      // background (bounded + concurrency-limited). Crisis/hostile/spam are never
+      // drafted (shouldDraftFor enforces the safety rules).
+      const draftable = normalized.filter(shouldDraftFor).slice(0, 20);
+      if (draftable.length > 0 && typeof generateAiResponse === 'function') {
+        runWithConcurrency(draftable, 3, async (c) => {
+          const result = await generateAiResponse({
+            commentText: c.text,
+            commentClassification: c.classification,
+            creatorVoiceProfile: voice,
+          });
+          if (result?.responseText && !result.error) {
+            dispatch({ type: 'SET_AI_DRAFT', payload: { commentId: c.id, text: result.responseText } });
+          }
+        }).then(() => {
+          showToast(`Drafts ready for ${draftable.length} comments.`, 'success');
+        }).catch(() => {});
+      }
     } catch (err) {
       showToast(`Failed to load comments: ${err.message}`, 'error');
     }

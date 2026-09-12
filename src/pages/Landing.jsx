@@ -130,7 +130,7 @@ const faqs = [
   },
   {
     q: 'Can I test without a credit card?',
-    a: 'Yes. Ghost Guardian provides an interactive live workspace demo and 14-day trial without requiring payment details.',
+    a: 'Yes. Ghost Guardian is completely free during our private beta — no payment details required. Just create an account and connect your channel.',
   },
 ];
 
@@ -159,13 +159,13 @@ export default function Landing() {
           </Link>
           <div className="flex items-center gap-4">
             <Link
-              to="/pricing"
+              to="/auth"
               className="text-xs font-display font-bold uppercase tracking-widest text-[#a0a0a0] hover:text-white transition-colors px-2 py-1"
             >
-              Pricing
+              Sign In
             </Link>
             <Button asChild size="sm">
-              <Link to="/app">Launch Demo</Link>
+              <Link to="/auth">Get Started Free</Link>
             </Button>
           </div>
         </div>
@@ -190,17 +190,17 @@ export default function Landing() {
 
           <div className="pt-3 flex flex-col sm:flex-row items-start sm:items-center gap-4">
             <Button asChild size="lg" className="w-full sm:w-auto gap-2.5">
-              <Link to="/app">
-                Engage Guardian Defense <ArrowRight size={16} />
+              <Link to="/auth">
+                Get Started Free <ArrowRight size={16} />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-              <Link to="/auth">Initialize Creator Access</Link>
+              <Link to="/auth">Sign In</Link>
             </Button>
           </div>
 
           <p className="text-xs font-mono text-[#a0a0a0] pt-1">
-            Zero credit card required · 14-day defense trial · Deterministic safety guardrails
+            Free during private beta · No credit card · You approve every reply
           </p>
         </div>
       </section>
@@ -472,10 +472,10 @@ export default function Landing() {
           </p>
           <div className="flex flex-wrap justify-center gap-4 pt-2">
             <Button asChild size="lg" className="w-full sm:w-auto">
-              <Link to="/app">Deploy Workspace Demo</Link>
+              <Link to="/auth">Get Started Free</Link>
             </Button>
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-              <Link to="/pricing">Review Access Tiers</Link>
+              <Link to="/auth">Sign In</Link>
             </Button>
           </div>
         </div>

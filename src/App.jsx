@@ -19,10 +19,6 @@ const Community = lazy(() => import('./pages/Community'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Settings = lazy(() => import('./pages/Settings'));
 
-import { runtimeConfig } from './app/config';
-
-const isProduction = runtimeConfig.mode === 'production';
-
 function ScrollToTop({ children }) {
   const { pathname } = useLocation();
 
@@ -54,7 +50,7 @@ export default function App() {
     <Suspense fallback={<PageLoader />}>
       <ScrollToTop>
         <Routes>
-          <Route path="/" element={isProduction ? <BetaWaitlist /> : <Landing />} />
+          <Route path="/" element={<Landing />} />
           <Route path="/waitlist" element={<BetaWaitlist />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/auth" element={<Auth />} />

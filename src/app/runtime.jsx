@@ -128,6 +128,28 @@ function reducer(state, action) {
     }
     case 'SET_RESPONSE_TEXT':
       return updateCommentState(state, action.payload.commentId, { responseText: action.payload.text, wasEdited: true });
+    case 'SET_AI_DRAFT': {
+      // Auto-generated draft in the creator's voice. Stored on the comment and
+      // primed as the response only if the creator hasn't already edited it.
+      const { commentId, tone = 'warm', text } = action.payload;
+      if (!text) return state;
+      const newComments = (state.comments || []).map((c) =>
+        c.id === commentId
+          ? { ...c, drafts: { ...(c.drafts || {}), [tone]: text }, draftStatus: 'ready' }
+          : c
+      );
+      const current = state.commentStates[commentId] || {};
+      const nextState = {
+        ...current,
+        activeTone: current.activeTone || tone,
+        responseText: current.wasEdited ? current.responseText : (current.responseText || text),
+      };
+      return {
+        ...state,
+        comments: newComments,
+        commentStates: { ...state.commentStates, [commentId]: nextState },
+      };
+    }
     case 'REGENERATE': {
       const comment = (state.comments || []).find((item) => item.id === action.payload);
       const current = state.commentStates[action.payload] || {};

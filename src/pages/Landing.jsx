@@ -408,7 +408,7 @@ export default function Landing() {
             <div key={cluster.id} className="ghost-panel p-6 space-y-3 border-white/[0.08]">
               <div className="flex items-center justify-between">
                 <Chip variant="attention" className="text-[11px]">
-                  <Sparkles size={11} /> {cluster.mentions} creators inquired
+                  <Sparkles size={11} /> {cluster.mentions} viewers asked
                 </Chip>
                 <span className="text-xs font-mono text-[#00FF66] font-bold">{cluster.trend}</span>
               </div>

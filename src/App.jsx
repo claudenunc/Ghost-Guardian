@@ -1,7 +1,9 @@
-import React, { Suspense, lazy } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useGuardian } from './lib/store';
 import AppLayout from './components/layout/AppLayout';
+import ConnectGate from './components/onboarding/ConnectGate';
+import { getYouTubeConnection } from './lib/youtubeConnect';
 
 // Route-level code splitting
 const Landing = lazy(() => import('./pages/Landing'));
@@ -45,6 +47,32 @@ function RequireAuth({ children }) {
   return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname)}`} replace />;
 }
 
+/**
+ * Required after sign-up: the creator must connect their YouTube channel before
+ * entering the workspace. Checks the connection once on entry to /app.
+ */
+function RequireYouTube({ children }) {
+  const [status, setStatus] = useState('checking'); // checking | connected | disconnected
+
+  useEffect(() => {
+    let cancelled = false;
+    getYouTubeConnection()
+      .then((c) => {
+        if (!cancelled) setStatus(c.connected ? 'connected' : 'disconnected');
+      })
+      .catch(() => {
+        if (!cancelled) setStatus('disconnected');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  if (status === 'checking') return <PageLoader />;
+  if (status === 'disconnected') return <ConnectGate />;
+  return children;
+}
+
 export default function App() {
   return (
     <Suspense fallback={<PageLoader />}>
@@ -56,8 +84,8 @@ export default function App() {
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />
 
-          {/* Authenticated workspace. Demo authentication is explicitly opted into. */}
-          <Route path="/app" element={<RequireAuth><AppLayout /></RequireAuth>}>
+          {/* Authenticated workspace — also requires a connected YouTube channel. */}
+          <Route path="/app" element={<RequireAuth><RequireYouTube><AppLayout /></RequireYouTube></RequireAuth>}>
             <Route index element={<Dashboard />} />
             <Route path="inbox" element={<CommentInbox />} />
             <Route path="voice" element={<CreatorVoice />} />

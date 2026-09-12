@@ -74,7 +74,7 @@ export default function Auth() {
         setConfirmPassword('');
         return;
       }
-      navigate('/onboarding', { replace: true });
+      navigate('/app', { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

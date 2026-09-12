@@ -35,6 +35,14 @@ export function createDevelopmentAuthAdapter({ storage } = {}) {
       sessionStorage?.setItem(SESSION_KEY, JSON.stringify(session));
       return session;
     },
+    register({ name } = {}) {
+      const session = {
+        user: { id: 'demo-creator', name: name || 'Alex Chen', isDemo: true },
+        environment: 'demo',
+      };
+      sessionStorage?.setItem(SESSION_KEY, JSON.stringify(session));
+      return session;
+    },
     signOut() {
       sessionStorage?.removeItem(SESSION_KEY);
     },

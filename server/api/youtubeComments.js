@@ -5,6 +5,7 @@
 
 import { rateLimiter } from './rateLimiter.js';
 import { logApiCall } from './logger.js';
+import { youtubeClient } from '../youtube/youtubeClient.js';
 
 const YOUTUBE_API_BASE = 'https://www.googleapis.com/youtube/v3';
 
@@ -41,10 +42,11 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
   };
 
   try {
-    let videoId = query?.videoId;
-    let channelId = query?.channelId;
-    let maxResults = query?.maxResults || '50';
-    let passedApiKey = query?.apiKey;
+    let videoId = req.query?.videoId || query?.videoId;
+    let channelId = req.query?.channelId || query?.channelId;
+    let maxResults = req.query?.maxResults || query?.maxResults || '50';
+    let pageToken = req.query?.pageToken || query?.pageToken || null;
+    let passedApiKey = req.query?.apiKey || query?.apiKey;
 
     if (!videoId && !channelId) {
       // Parse query params from URL if req.url exists
@@ -52,11 +54,16 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
         const parsedUrl = new URL(req.url, `http://${req.headers?.host || 'localhost'}`);
         videoId = parsedUrl.searchParams.get('videoId');
         channelId = parsedUrl.searchParams.get('channelId');
-        maxResults = parsedUrl.searchParams.get('maxResults') || '50';
+        maxResults = parsedUrl.searchParams.get('maxResults') || maxResults;
+        pageToken = parsedUrl.searchParams.get('pageToken') || pageToken;
         if (!passedApiKey) {
           passedApiKey = parsedUrl.searchParams.get('apiKey');
         }
       }
+    }
+
+    if (!req.query) {
+      req.query = { videoId, channelId, maxResults, pageToken, apiKey: passedApiKey };
     }
 
     if (!videoId && !channelId) {
@@ -72,6 +79,17 @@ export async function handleYoutubeComments(req, res, { query = null } = {}) {
       });
     }
 
+    // If videoId is present, fetch public comments using youtubeClient
+    if (req.query?.videoId || videoId) {
+      const activeVideoId = req.query?.videoId || videoId;
+      const result = await youtubeClient.fetchPublicVideoComments(activeVideoId, {
+        maxResults: Math.min(Number(maxResults) || 50, 100),
+        pageToken,
+      });
+      return sendJson(200, result);
+    }
+
+    // Otherwise, fall back to channel-based fetching
     const params = new URLSearchParams({
       part: 'snippet,replies',
       maxResults: String(Math.min(Number(maxResults) || 50, 100)),

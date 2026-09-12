@@ -168,6 +168,40 @@ export class YouTubeClient {
   }
 
   /**
+   * Fetches comments on any public YouTube video by videoId.
+   * Uses API key only — no OAuth needed.
+   */
+  async fetchPublicVideoComments(videoId, { maxResults = 50, pageToken = null } = {}) {
+    const apiKey = process.env.YOUTUBE_API_KEY;
+    if (!apiKey) throw new Error('YOUTUBE_API_KEY is required for public video comment fetching.');
+
+    const params = new URLSearchParams({
+      part: 'snippet',
+      videoId,
+      maxResults: String(maxResults),
+      textFormat: 'plainText',
+      order: 'relevance',
+      key: apiKey,
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const url = `${YOUTUBE_API_BASE}/commentThreads?${params.toString()}`;
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`YouTube API error (fetchPublicVideoComments): ${response.status} ${errText}`);
+    }
+
+    const data = await response.json();
+    return {
+      comments: (data.items || []).map((item) => this.normalizeYouTubeCommentThread(item)),
+      nextPageToken: data.nextPageToken || null,
+      totalResults: data.pageInfo?.totalResults || 0,
+    };
+  }
+
+  /**
    * Normalizes a raw YouTube CommentThread item into Ghost Guardian's standard Comment model.
    */
   normalizeYouTubeCommentThread(thread) {

@@ -58,6 +58,33 @@ export default function Dashboard() {
     showToast,
   } = useGuardian();
 
+  // Orientation banner state: shown when comments.length === 0 OR user's first session
+  const [orientationDismissed, setOrientationDismissed] = React.useState(() => {
+    try {
+      return localStorage.getItem('ghost_guardian_orientation_dismissed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  const isFirstSession = useMemo(() => {
+    try {
+      return !localStorage.getItem('ghost_guardian_has_visited');
+    } catch {
+      return true;
+    }
+  }, []);
+
+  const showOrientationBanner = !orientationDismissed && (comments.length === 0 || isFirstSession);
+
+  const handleDismissOrientation = () => {
+    setOrientationDismissed(true);
+    try {
+      localStorage.setItem('ghost_guardian_orientation_dismissed', 'true');
+      localStorage.setItem('ghost_guardian_has_visited', 'true');
+    } catch {}
+  };
+
   // Domain derived selectors
   const summary = useMemo(
     () => getGuardianSummary(comments, commentStates),
@@ -95,6 +122,91 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 pb-16">
+      {/* 0. ORIENTATION BANNER (First session or zero comments) */}
+      {showOrientationBanner && (
+        <section
+          aria-label="System Orientation"
+          className="ghost-panel p-6 sm:p-7 border border-[#0200F1]/50 bg-[#050508] shadow-[0_0_24px_rgba(2,0,241,0.2)] relative overflow-hidden"
+        >
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-[#0200F1] via-[#00FF66] to-[#0200F1]" />
+
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+            <div className="space-y-4 max-w-3xl">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <Chip variant="guardian">System Orientation</Chip>
+                <span className="text-[11px] font-mono tracking-wider text-[#a0a0a0] uppercase">
+                  Mission Briefing
+                </span>
+              </div>
+
+              <div>
+                <h2 className="font-display text-2xl sm:text-3xl text-white font-extrabold uppercase tracking-wide">
+                  What Ghost Guardian Does
+                </h2>
+                <p className="mt-1 text-sm sm:text-base text-[#e0e0e0] leading-relaxed">
+                  Ghost Guardian is an autonomous community shield that sits between your YouTube comment section and your attention. It shields you from harassment and spam, catches emotional moments needing genuine care, and crafts voice-aligned draft replies in your exact style.
+                </p>
+              </div>
+
+              {/* Three Main Things To Do */}
+              <div className="space-y-2 pt-2">
+                <p className="text-xs uppercase font-mono font-bold tracking-widest text-[#00FF66]">
+                  The three things you do here:
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 bg-black/60 border border-white/10 rounded-lg space-y-1">
+                    <div className="flex items-center gap-2 text-white font-display text-sm font-bold uppercase tracking-wider">
+                      <span className="size-5 rounded flex items-center justify-center bg-[#0200F1] text-white text-[11px] font-mono font-bold">1</span>
+                      Load Comments
+                    </div>
+                    <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                      Connect your YouTube channel or enter a video ID to pull in your community comments automatically.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-black/60 border border-white/10 rounded-lg space-y-1">
+                    <div className="flex items-center gap-2 text-white font-display text-sm font-bold uppercase tracking-wider">
+                      <span className="size-5 rounded flex items-center justify-center bg-[#0200F1] text-white text-[11px] font-mono font-bold">2</span>
+                      Review the Inbox
+                    </div>
+                    <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                      Open your triage lanes to see high-priority threads, questions, and sensitive human moments isolated safely.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 bg-black/60 border border-white/10 rounded-lg space-y-1">
+                    <div className="flex items-center gap-2 text-white font-display text-sm font-bold uppercase tracking-wider">
+                      <span className="size-5 rounded flex items-center justify-center bg-[#0200F1] text-white text-[11px] font-mono font-bold">3</span>
+                      Approve Responses
+                    </div>
+                    <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                      Review pre-drafted replies in your voice. Edit or pick a different tone variant, then publish with one click.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action button & dismiss */}
+            <div className="flex flex-col sm:flex-row lg:flex-col items-stretch lg:items-end gap-3 shrink-0 pt-2 lg:pt-0">
+              <Button asChild size="md" variant="default">
+                <Link to="/app/inbox" className="inline-flex items-center justify-center gap-2 font-display uppercase tracking-wider font-bold">
+                  <MessageSquare size={16} /> Open Comment Inbox <ArrowRight size={14} />
+                </Link>
+              </Button>
+              <button
+                type="button"
+                onClick={handleDismissOrientation}
+                className="text-xs text-[#a0a0a0] hover:text-white transition-colors text-center lg:text-right px-2 py-1 cursor-pointer font-mono"
+              >
+                Dismiss Guide ✕
+              </button>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* 1. CREATOR BRIEFING HERO */}
       <div className="ghost-panel ghost-glow p-6 sm:p-8 border-[#4de1dc]/30 bg-gradient-to-r from-[#141829]/95 via-[#131726]/95 to-[#1c1830]/95">
         <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">

@@ -489,6 +489,50 @@ export default function Onboarding() {
                 </div>
               </div>
 
+              {/* Here's What You'll See First */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#0b0e17]/90 border border-white/10 space-y-4">
+                <div className="space-y-1">
+                  <span className="text-[11px] font-mono font-bold tracking-widest text-[#4de1dc] uppercase block">
+                    Orientation Briefing
+                  </span>
+                  <h3 className="font-display text-lg text-white font-bold">
+                    Here's what you'll see first
+                  </h3>
+                  <p className="text-xs text-[#8f97b0]">
+                    Ghost Guardian organizes your attention across three core command surfaces:
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
+                    <span className="text-xs font-display font-bold text-white uppercase tracking-wider block">
+                      1. The Dashboard
+                    </span>
+                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
+                      Your high-level briefing: see protected attention hours, urgent needs, and community pulse at a glance.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
+                    <span className="text-xs font-display font-bold text-[#4de1dc] uppercase tracking-wider block">
+                      2. The Inbox
+                    </span>
+                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
+                      Your triage center: review human moments, inspect flagged comments, and approve or edit voice-matched replies.
+                    </p>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
+                    <span className="text-xs font-display font-bold text-[#c084fc] uppercase tracking-wider block">
+                      3. The Voice Panel
+                    </span>
+                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
+                      Your tone calibrator: fine-tune warmth, directness, and humor parameters, and manage approved knowledge topics.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* Final CTA */}
               <div className="pt-2">
                 <Button

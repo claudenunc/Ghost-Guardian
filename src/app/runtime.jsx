@@ -37,14 +37,15 @@ function createEmptyProductionWorkspace() {
 function createServices(mode) {
   const isDemo = mode === 'demo';
   const isProduction = mode === 'production';
+  const auth = isDemo ? createDevelopmentAuthAdapter() : createSupabaseAuthAdapter();
   return {
     mode,
-    auth: isDemo ? createDevelopmentAuthAdapter() : createSupabaseAuthAdapter(),
+    auth,
     repositories: isDemo
       ? createDemoRepositories({ ...createDemoWorkspace() })
       : createUnavailableProductionRepositories(),
     persistence: isProduction
-      ? createSupabaseWorkspaceRepository()
+      ? createSupabaseWorkspaceRepository({ getUserId: () => auth.getCurrentUser()?.id ?? null })
       : createBrowserWorkspaceRepository(),
     guardian: isDemo ? createDemoGuardianProvider() : createProductionGuardianProvider(),
     platform: isDemo ? createDemoPlatformAdapter() : createProductionPlatformAdapter(),
@@ -55,8 +56,12 @@ function createInitialState(services) {
   const fixture = services.mode === 'demo'
     ? services.repositories.workspace.create()
     : createEmptyProductionWorkspace();
-  const saved = services.persistence.load();
-  const workspace = saved
+  // Synchronous first paint: the Supabase repo exposes loadCached(); the
+  // browser repo's load() is already synchronous. Never await here.
+  const saved = typeof services.persistence.loadCached === 'function'
+    ? services.persistence.loadCached()
+    : services.persistence.load();
+  const workspace = saved && typeof saved.then !== 'function'
     ? { ...fixture, ...saved, commentStates: { ...fixture.commentStates, ...saved.commentStates } }
     : fixture;
   return { ...workspace, session: services.auth.getSession(), toast: null };
@@ -184,7 +189,14 @@ function reducer(state, action) {
       return { ...state, policy: updatedPolicy };
     }
     case 'RESET_WORKSPACE':
-      return { ...action.payload, session: state.session, toast: null };
+      // Merge remote/partial data over a complete empty shape so components
+      // never hit undefined keys after a Supabase hydration.
+      return {
+        ...createEmptyProductionWorkspace(),
+        ...action.payload,
+        session: state.session,
+        toast: null,
+      };
     case 'IMPORT_WORKSPACE':
       return { ...state, ...action.payload, toast: { message: 'Workspace restored from backup.', type: 'success' } };
     case 'INGEST_YOUTUBE_COMMENTS': {
@@ -261,19 +273,29 @@ export function ApplicationProvider({ children }) {
   const services = useRef(createServices(runtimeConfig.mode)).current;
   const [state, dispatch] = useReducer(reducer, services, createInitialState);
 
-  useEffect(() => {
-    services.persistence.save(persistableState(state));
-  }, [services, state]);
+  const authedUserId = state.session?.user?.id || null;
 
+  // Persist on change. In production, wait until a creator is signed in so we
+  // never write orphaned rows that Row Level Security would reject.
   useEffect(() => {
-    if (services.mode === 'production') {
-      Promise.resolve(services.persistence.load()).then((remoteData) => {
-        if (remoteData && typeof remoteData === 'object' && Object.keys(remoteData).length > 0) {
-          dispatch({ type: 'RESET_WORKSPACE', payload: remoteData });
-        }
-      }).catch((err) => console.warn('Supabase remote load failed:', err));
-    }
-  }, [services]);
+    if (services.mode === 'production' && !authedUserId) return;
+    services.persistence.save(persistableState(state));
+  }, [services, state, authedUserId]);
+
+  // Hydrate from Supabase once the creator's session is restored. Keyed on the
+  // user id so it runs after auth resolves, not on the empty first mount.
+  useEffect(() => {
+    if (services.mode !== 'production' || !authedUserId) return;
+    let cancelled = false;
+    Promise.resolve(services.persistence.load()).then((remoteData) => {
+      if (!cancelled && remoteData && typeof remoteData === 'object' && Object.keys(remoteData).length > 0) {
+        dispatch({ type: 'RESET_WORKSPACE', payload: remoteData });
+      }
+    }).catch((err) => console.warn('Supabase remote load failed:', err));
+    return () => {
+      cancelled = true;
+    };
+  }, [services, authedUserId]);
 
   // Supabase auth state listener — keeps session in sync with Supabase
   useEffect(() => {

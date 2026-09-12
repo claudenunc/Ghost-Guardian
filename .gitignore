@@ -26,7 +26,8 @@ dist-ssr
 # Environment & local data
 .env
 .env*.local
-data/
+/data/
+!src/data/
 *.sqlite
 
 

@@ -2,6 +2,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { createDevelopmentAuthAdapter, createProductionAuthAdapter } from './authService';
 import { runtimeConfig } from './config';
 import { createBrowserWorkspaceRepository } from '../data/repositories/browserWorkspaceRepository';
+import { createSupabaseWorkspaceRepository } from '../data/repositories/supabaseWorkspaceRepository';
 import { createDemoRepositories, createUnavailableProductionRepositories } from '../data/repositories/demoRepositories';
 import { createDemoWorkspace } from '../fixtures/demoWorkspace';
 import { createWorkspaceExportPayload } from '../domain/settings/workspaceContracts';
@@ -12,13 +13,16 @@ const ApplicationContext = createContext(null);
 
 function createServices(mode) {
   const isDemo = mode === 'demo';
+  const isProduction = mode === 'production' || import.meta.env?.VITE_GHOST_GUARDIAN_RUNTIME === 'production';
   return {
     mode,
     auth: isDemo ? createDevelopmentAuthAdapter() : createProductionAuthAdapter(),
     repositories: isDemo
       ? createDemoRepositories({ ...createDemoWorkspace() })
       : createUnavailableProductionRepositories(),
-    persistence: createBrowserWorkspaceRepository(),
+    persistence: isProduction
+      ? createSupabaseWorkspaceRepository()
+      : createBrowserWorkspaceRepository(),
     guardian: isDemo ? createDemoGuardianProvider() : createProductionGuardianProvider(),
     platform: isDemo ? createDemoPlatformAdapter() : createProductionPlatformAdapter(),
   };
@@ -205,8 +209,18 @@ export function ApplicationProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, services, createInitialState);
 
   useEffect(() => {
-    if (services.mode === 'demo') services.persistence.save(persistableState(state));
+    services.persistence.save(persistableState(state));
   }, [services, state]);
+
+  useEffect(() => {
+    if (services.mode === 'production') {
+      Promise.resolve(services.persistence.load()).then((remoteData) => {
+        if (remoteData && typeof remoteData === 'object' && Object.keys(remoteData).length > 0) {
+          dispatch({ type: 'RESET_WORKSPACE', payload: remoteData });
+        }
+      }).catch((err) => console.warn('Supabase remote load failed:', err));
+    }
+  }, [services]);
 
   const showToast = useCallback((message, type = 'success') => {
     dispatch({ type: 'SET_TOAST', payload: { message, type, id: Date.now() } });

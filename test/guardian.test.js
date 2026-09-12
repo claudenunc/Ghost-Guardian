@@ -5,6 +5,7 @@ import { Category, RecommendedAction, RuleSignal } from '../src/domain/guardian/
 import { processWithRules } from '../src/domain/guardian/ruleBasedGuardianProvider.js';
 import { findDuplicateDrafts, similarityScore } from '../src/domain/guardian/duplicateDetection.js';
 import { createDemoRepositories, createUnavailableProductionRepositories } from '../src/data/repositories/demoRepositories.js';
+import { createSupabaseWorkspaceRepository } from '../src/data/repositories/supabaseWorkspaceRepository.js';
 import { createDevelopmentAuthAdapter, createProductionAuthAdapter } from '../src/app/authService.js';
 import { createDemoWorkspace } from '../src/fixtures/demoWorkspace.js';
 import { ApplicationError } from '../src/app/errors.js';
@@ -174,6 +175,64 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       assert.equal(repos.environment, 'production');
       assert.throws(() => repos.creator.get(), /Production repositories are not configured/);
       assert.throws(() => repos.comments.list(), /Production repositories are not configured/);
+    });
+
+    it('implements browserWorkspaceRepository interface across Supabase tables', async () => {
+      const recordedCalls = [];
+      const mockClient = {
+        from(tableName) {
+          return {
+            upsert: async (records) => {
+              recordedCalls.push({ action: 'upsert', table: tableName, records });
+              return { data: records, error: null };
+            },
+            select: () => ({
+              limit: async () => ({ data: [{ id: 'mock-id', data: { name: 'Mock Creator' } }], error: null }),
+              then: (resolve) => resolve({ data: [], error: null }),
+            }),
+            delete: () => ({
+              neq: async () => {
+                recordedCalls.push({ action: 'delete', table: tableName });
+                return { error: null };
+              },
+            }),
+          };
+        },
+      };
+
+      const repo = createSupabaseWorkspaceRepository({ client: mockClient });
+      assert.equal(typeof repo.save, 'function');
+      assert.equal(typeof repo.load, 'function');
+      assert.equal(typeof repo.clear, 'function');
+
+      const sampleState = {
+        creator: { id: 'c1', displayName: 'Creator One' },
+        voice: { warmth: 80, directness: 70 },
+        policy: { mode: 'guardian' },
+        comments: [{ id: 'comm-1', text: 'Great content!' }],
+        commentStates: { 'comm-1': { status: 'approved', activeTone: 'warm' } },
+        learning: [{ id: 'learn-1', before: 'Hi', after: 'Hello friend' }],
+        knowledge: [{ id: 'kb-1', topic: 'Show lore', content: 'Details' }],
+        activity: [{ id: 'act-1', label: 'Approved draft' }],
+        videos: [{ id: 'vid-1', title: 'Episode 1' }],
+      };
+
+      await repo.save(sampleState);
+
+      const tablesUpserted = recordedCalls.map((c) => c.table);
+      assert.ok(tablesUpserted.includes('creators'));
+      assert.ok(tablesUpserted.includes('voice_profiles'));
+      assert.ok(tablesUpserted.includes('guardian_policies'));
+      assert.ok(tablesUpserted.includes('comments'));
+      assert.ok(tablesUpserted.includes('comment_states'));
+      assert.ok(tablesUpserted.includes('learning_examples'));
+      assert.ok(tablesUpserted.includes('knowledge_base'));
+      assert.ok(tablesUpserted.includes('activity_log'));
+      assert.ok(tablesUpserted.includes('videos'));
+
+      await repo.clear();
+      const tablesDeleted = recordedCalls.filter((c) => c.action === 'delete').map((c) => c.table);
+      assert.equal(tablesDeleted.length, 9);
     });
   });
 

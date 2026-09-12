@@ -21,6 +21,7 @@ import {
   calibrateDraft,
   deriveLearnedTraits,
   getVoiceCalibrationStatus,
+  calculateVoiceConfidence,
 } from '../src/domain/voice/voiceCalibrator.js';
 import {
   getGuardianSummary,
@@ -465,6 +466,17 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       assert.equal(getVoiceCalibrationStatus(1, 2), 'Established');
       assert.equal(getVoiceCalibrationStatus(3, 3), 'Well calibrated');
     });
+
+    it('calculates voice confidence percentage capped at 100%', () => {
+      assert.equal(calculateVoiceConfidence([]), 0);
+      assert.equal(calculateVoiceConfidence([{ id: '1' }]), 5);
+      assert.equal(calculateVoiceConfidence(new Array(10).fill({})), 50);
+      assert.equal(calculateVoiceConfidence(new Array(20).fill({})), 100);
+      assert.equal(calculateVoiceConfidence(new Array(25).fill({})), 100);
+      assert.equal(calculateVoiceConfidence(null), 0);
+      assert.equal(calculateVoiceConfidence(15), 75);
+    });
+
 
     it('derives learned traits truthfully from creator configuration', () => {
       const traits = deriveLearnedTraits({

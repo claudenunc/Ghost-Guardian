@@ -24,6 +24,29 @@ import { GhostMark, Chip, Button } from '../components/guardian/atoms';
 
 const tiers = [
   {
+    id: 'beta',
+    name: 'Beta Founder',
+    badge: 'FOUNDING 20 · LIMITED',
+    target: 'First 20 beta creators — founding rate locked for life',
+    monthlyPrice: 59,
+    annualPrice: 59,
+    commentLimit: 2000,
+    features: [
+      'Everything in Creator Core',
+      '2,000 comments/month processed',
+      'Copilot + Autopilot defense modes',
+      'Dynamic voice matrix calibration',
+      'Founding rate locked permanently',
+      'Direct line to the build team',
+      'Voice your feature requests first',
+    ],
+    cta: 'Claim Founding Spot',
+    featured: false,
+    color: 'border-[#FF6A00]/60 hover:border-[#FF6A00] bg-[#0a0a0a] shadow-[0_0_25px_rgba(255,106,0,0.15)]',
+    stripeUrl: import.meta.env.VITE_STRIPE_BETA_LINK || '#',
+    spotsTotal: 20,
+  },
+  {
     id: 'starter',
     name: 'Starter Defense',
     badge: null,
@@ -158,9 +181,9 @@ export default function Pricing() {
     const monthlyHoursSaved = Math.round(hoursSavedPerWeek * 4.33);
     const monthlyValue = Math.round(monthlyHoursSaved * hourlyRate);
 
-    let recommendedPlan = tiers[1]; // default Creator
-    if (weeklyComments <= 200) recommendedPlan = tiers[0];
-    else if (weeklyComments > 2500) recommendedPlan = tiers[2];
+    let recommendedPlan = tiers.find((t) => t.id === 'creator') || tiers[2]; // default Creator
+    if (weeklyComments <= 200) recommendedPlan = tiers.find((t) => t.id === 'starter') || tiers[1];
+    else if (weeklyComments > 2500) recommendedPlan = tiers.find((t) => t.id === 'pro') || tiers[3];
 
     const planCost = billingCycle === 'annual' ? recommendedPlan.annualPrice : recommendedPlan.monthlyPrice;
     const netSavings = Math.max(0, monthlyValue - planCost);
@@ -211,7 +234,7 @@ export default function Pricing() {
       {/* MONUMENTAL HERO SECTION */}
       <section className="mx-auto max-w-6xl px-5 pt-16 pb-16 sm:pt-24 text-center space-y-6">
         <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#0A00FF]/15 border border-[#0A00FF]/40 text-xs font-mono font-bold text-[#0A00FF] shadow-[0_0_15px_rgba(10,0,255,0.25)]">
-          <Sparkles size={13} /> Transparent Sovereignty · 14-Day Free Trial
+          <Sparkles size={13} /> Beta Founders: $59/mo locked for life · 20 spots only
         </div>
 
         <h1 className="monumental-text text-4xl sm:text-6xl lg:text-7xl font-black tracking-tight">
@@ -333,14 +356,32 @@ export default function Pricing() {
                     variant={isFeatured ? 'primary' : 'default'}
                     className="w-full justify-center"
                   >
-                    <Link to="/auth" className="gap-2">
-                      <span>{tier.cta}</span>
-                      <ArrowRight size={14} />
-                    </Link>
+                    {tier.stripeUrl ? (
+                      <a
+                        href={tier.stripeUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="gap-2"
+                      >
+                        <span>{tier.cta}</span>
+                        <ArrowRight size={14} />
+                      </a>
+                    ) : (
+                      <Link to="/auth" className="gap-2">
+                        <span>{tier.cta}</span>
+                        <ArrowRight size={14} />
+                      </Link>
+                    )}
                   </Button>
-                  <span className="text-[10px] font-mono text-center text-[#a0a0a0] block mt-2">
-                    14-day defense trial · Zero card required
-                  </span>
+                  {tier.id === 'beta' ? (
+                    <span className="text-[10px] font-mono text-[#FF6A00] text-center block mt-1">
+                      ⚡ 20 founding spots · 0 claimed — be first
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono text-center text-[#a0a0a0] block mt-2">
+                      14-day defense trial · Zero card required
+                    </span>
+                  )}
                 </div>
               </div>
             );

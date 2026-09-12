@@ -247,3 +247,18 @@ export function getVoiceCalibrationStatus(learningCount = 0, knowledgeCount = 0)
   if (learningCount >= 1 || knowledgeCount >= 2) return 'Established';
   return 'Calibrating';
 }
+
+/**
+ * Calculates creator voice confidence percentage based on approved learning examples.
+ * Formula: Math.min(100, (learning_examples.length / 20) * 100)
+ *
+ * @param {Array|number} learningExamples - Array of learning examples or direct count
+ * @returns {number} Integer percentage from 0 to 100
+ */
+export function calculateVoiceConfidence(learningExamples = []) {
+  const count = Array.isArray(learningExamples)
+    ? learningExamples.length
+    : (typeof learningExamples === 'number' ? learningExamples : 0);
+  return Math.min(100, Math.round((count / 20) * 100));
+}
+

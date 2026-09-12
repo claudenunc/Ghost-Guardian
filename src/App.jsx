@@ -5,6 +5,7 @@ import AppLayout from './components/layout/AppLayout';
 
 // Route-level code splitting
 const Landing = lazy(() => import('./pages/Landing'));
+const BetaWaitlist = lazy(() => import('./pages/BetaWaitlist'));
 const Pricing = lazy(() => import('./pages/Pricing'));
 const Auth = lazy(() => import('./pages/Auth'));
 const Onboarding = lazy(() => import('./pages/Onboarding'));
@@ -17,6 +18,8 @@ const Analytics = lazy(() => import('./pages/Analytics'));
 const Community = lazy(() => import('./pages/Community'));
 const ActivityHistory = lazy(() => import('./pages/ActivityHistory'));
 const Settings = lazy(() => import('./pages/Settings'));
+
+const isProduction = import.meta.env.VITE_GHOST_GUARDIAN_RUNTIME === 'production';
 
 function ScrollToTop({ children }) {
   const { pathname } = useLocation();
@@ -49,7 +52,8 @@ export default function App() {
     <Suspense fallback={<PageLoader />}>
       <ScrollToTop>
         <Routes>
-          <Route path="/" element={<Landing />} />
+          <Route path="/" element={isProduction ? <BetaWaitlist /> : <Landing />} />
+          <Route path="/waitlist" element={<BetaWaitlist />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/onboarding" element={<RequireAuth><Onboarding /></RequireAuth>} />

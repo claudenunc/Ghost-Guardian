@@ -2,15 +2,18 @@ import React from 'react';
 import { Sparkles, CheckCircle2, BookOpen, Layers, Heart, Shield } from 'lucide-react';
 import { Chip } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
+import VoiceConfidenceMeter from './VoiceConfidenceMeter';
 import {
   deriveLearnedTraits,
   getVoiceCalibrationStatus,
+  calculateVoiceConfidence,
 } from '../../domain/voice/voiceCalibrator';
 
 export default function VoiceSummary() {
   const { voice, learning, knowledge } = useGuardian();
   const traits = deriveLearnedTraits(voice, learning.length);
   const status = getVoiceCalibrationStatus(learning.length, knowledge.length);
+  const confidence = calculateVoiceConfidence(learning);
 
   return (
     <div className="ghost-panel p-6 sm:p-8 space-y-6">
@@ -57,9 +60,12 @@ export default function VoiceSummary() {
             {learning.length})
           </span>
           <span className="text-xs text-[#8f97b0]">
-            Approved calibrations stored
+            Voice learned: {confidence}%
           </span>
         </div>
+
+        <VoiceConfidenceMeter compact={true} className="p-3.5 rounded-xl border border-white/5 bg-[#0d0f17]/60" />
+
 
         {learning.length === 0 ? (
           <p className="text-xs text-[#8f97b0] italic py-2">

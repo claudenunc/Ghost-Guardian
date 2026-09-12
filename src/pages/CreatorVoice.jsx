@@ -13,6 +13,7 @@ import VoicePlayground from '../components/voice/VoicePlayground';
 import VoiceSummary from '../components/voice/VoiceSummary';
 import VoiceKnowledge from '../components/voice/VoiceKnowledge';
 import VoiceLaboratory from '../components/voice/VoiceLaboratory';
+import VoiceConfidenceMeter from '../components/voice/VoiceConfidenceMeter';
 import { getVoiceCalibrationStatus } from '../domain/voice/voiceCalibrator';
 
 export default function CreatorVoice() {
@@ -50,6 +51,10 @@ export default function CreatorVoice() {
           <Chip variant="guardian">✨ Calibrated</Chip>
         </div>
       </div>
+
+      {/* VOICE CONFIDENCE METER */}
+      <VoiceConfidenceMeter />
+
 
       {/* 2. THE VOICE CALIBRATION PLAYGROUND */}
       <section className="space-y-4">

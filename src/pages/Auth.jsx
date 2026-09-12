@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
-import { LogIn, UserPlus } from 'lucide-react';
+import { LogIn, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { Button, GhostMark } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 
@@ -17,6 +17,8 @@ export default function Auth() {
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [info, setInfo] = useState(null);
+  const [showPassword, setShowPassword] = useState(false);
 
   // Auto-redirect if already authenticated
   useEffect(() => {
@@ -64,7 +66,14 @@ export default function Auth() {
 
     setLoading(true);
     try {
-      await register({ name: name.trim(), email: email.trim(), password });
+      const result = await register({ name: name.trim(), email: email.trim(), password });
+      if (result?.requiresEmailConfirmation) {
+        setInfo('Almost there — check your inbox and confirm your email, then sign in.');
+        setActiveTab('signin');
+        setPassword('');
+        setConfirmPassword('');
+        return;
+      }
       navigate('/onboarding', { replace: true });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
@@ -122,6 +131,13 @@ export default function Auth() {
           </div>
         )}
 
+        {/* Info Display (e.g. confirm your email) */}
+        {info && (
+          <div className="p-3 rounded-lg bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66] text-xs font-mono mb-4 animate-in fade-in">
+            {info}
+          </div>
+        )}
+
         {/* Sign In Form */}
         {activeTab === 'signin' && (
           <form onSubmit={handleSignIn} className="space-y-4">
@@ -144,16 +160,26 @@ export default function Auth() {
               <label className="block text-xs font-mono text-[#a0a0a0] uppercase tracking-wider">
                 Password <span className="text-[#FF1400]">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={inputClass}
-                disabled={loading}
-                autoComplete="current-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`${inputClass} pr-11`}
+                  disabled={loading}
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a0a0a0] hover:text-white transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <Button
               type="submit"
@@ -212,31 +238,51 @@ export default function Auth() {
               <label className="block text-xs font-mono text-[#a0a0a0] uppercase tracking-wider">
                 Password <span className="text-[#FF1400]">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={inputClass}
-                disabled={loading}
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`${inputClass} pr-11`}
+                  disabled={loading}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a0a0a0] hover:text-white transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <label className="block text-xs font-mono text-[#a0a0a0] uppercase tracking-wider">
                 Confirm Password <span className="text-[#FF1400]">*</span>
               </label>
-              <input
-                type="password"
-                required
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                placeholder="••••••••"
-                className={inputClass}
-                disabled={loading}
-                autoComplete="new-password"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className={`${inputClass} pr-11`}
+                  disabled={loading}
+                  autoComplete="new-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((s) => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#a0a0a0] hover:text-white transition-colors cursor-pointer"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <Button
               type="submit"

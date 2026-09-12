@@ -347,7 +347,11 @@ export function ApplicationProvider({ children }) {
 
   const register = useCallback(async (credentials) => {
     const session = await services.auth.register(credentials);
-    dispatch({ type: 'SET_SESSION', payload: session });
+    // Only authenticate when a real token came back. If email confirmation is
+    // required, Supabase returns no token — keep them signed out until they confirm.
+    if (session && session.token) {
+      dispatch({ type: 'SET_SESSION', payload: session });
+    }
     return session;
   }, [services]);
 

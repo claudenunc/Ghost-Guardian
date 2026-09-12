@@ -16,13 +16,22 @@ const BYPASS_CODE = 'ENVY2026';
 export default function BetaWaitlist() {
   const navigate = useNavigate();
 
-  // Secret bypass: ?access=ENVY2026 → skip waitlist gate, go to auth
+  // Route returning users past the waitlist gate.
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     if (params.get('access') === BYPASS_CODE) {
       localStorage.setItem(BYPASS_KEY, 'true');
     }
-    if (localStorage.getItem(BYPASS_KEY) === 'true') {
+    // Already signed in (incl. right after confirming their email)? Go to the app.
+    if (supabase) {
+      supabase.auth.getSession().then(({ data }) => {
+        if (data?.session) {
+          navigate('/app', { replace: true });
+        } else if (localStorage.getItem(BYPASS_KEY) === 'true') {
+          navigate('/auth', { replace: true });
+        }
+      }).catch(() => {});
+    } else if (localStorage.getItem(BYPASS_KEY) === 'true') {
       navigate('/auth', { replace: true });
     }
   }, [navigate]);
@@ -195,7 +204,7 @@ export default function BetaWaitlist() {
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Alex Chen"
+                    placeholder="Your name"
                     className="w-full bg-[#0a0a0a] border border-white/20 rounded-lg px-4 py-3 text-white font-mono text-sm focus:border-[#0200F1] focus:outline-none transition-colors"
                   />
                 </div>
@@ -235,13 +244,19 @@ export default function BetaWaitlist() {
                 </div>
               </form>
 
-              <div className="text-center pt-2 border-t border-white/5">
+              <div className="text-center pt-2 border-t border-white/5 space-y-2">
                 <Link
                   to="/pricing"
-                  className="text-[11px] font-mono text-[#FF6A00] hover:underline"
+                  className="block text-[11px] font-mono text-[#FF6A00] hover:underline"
                 >
-                  ⚡ Or lock founding rate at $59/mo forever →
+                  Or lock founding rate at $59/mo forever →
                 </Link>
+                <p className="text-[11px] font-mono text-[#a0a0a0]">
+                  Already a member?{' '}
+                  <Link to="/auth" className="text-[#0200F1] hover:underline">
+                    Sign in
+                  </Link>
+                </p>
               </div>
             </div>
           )}

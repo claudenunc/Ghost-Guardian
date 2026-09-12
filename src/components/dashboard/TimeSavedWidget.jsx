@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowRight,
   Shield,
@@ -20,9 +21,12 @@ export default function TimeSavedWidget({
   const [isBreakdownOpen, setIsBreakdownOpen] = useState(false);
   const [isWeeklyEmailOpen, setIsWeeklyEmailOpen] = useState(false);
   const [isMonthlyReportOpen, setIsMonthlyReportOpen] = useState(false);
-  const [viewMode, setViewMode] = useState('monthly'); // 'monthly' | 'session'
+  const [viewMode, setViewMode] = useState('session'); // 'monthly' | 'session'
 
   const hourlyRate = settings?.hourlyRate || 50;
+  // Honesty gate: the "monthly" view is a fixed marketing projection. Never show
+  // it (or any fabricated savings) until the creator has real triaged activity.
+  const hasActivity = (comments?.length || 0) > 0;
 
   // Compute metrics for both monthly projection & live session
   const monthlyData = useMemo(() => {
@@ -44,6 +48,36 @@ export default function TimeSavedWidget({
   }));
 
   const activeCommenter = commenters?.[0] || null;
+
+  // No real activity yet → honest empty hero instead of a fabricated projection.
+  if (!hasActivity) {
+    return (
+      <div className={`ghost-panel relative overflow-hidden border-white/10 bg-[#050505] p-6 sm:p-8 ${className}`}>
+        <div className="flex items-center gap-2">
+          <span className="p-1.5 rounded-lg bg-[#0200F1]/15 text-[#0200F1]">
+            <Shield size={16} />
+          </span>
+          <span className="text-xs font-bold tracking-[0.2em] text-[#0200F1] uppercase">
+            Time Saved
+          </span>
+        </div>
+        <h3 className="font-display text-2xl sm:text-3xl text-white mt-3">
+          No activity yet.
+        </h3>
+        <p className="text-sm text-[#a0a0a0] mt-2 max-w-xl leading-relaxed">
+          Import comments from one of your videos and Ghost Guardian starts working —
+          filtering spam, shielding hostility, and drafting replies in your voice.
+          Your real time saved will show up here.
+        </p>
+        <Button asChild size="md" className="mt-5 gap-2">
+          <Link to="/app/inbox">
+            <span>Import comments</span>
+            <ArrowRight size={16} />
+          </Link>
+        </Button>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -73,7 +107,7 @@ export default function TimeSavedWidget({
                   {hours} hours
                 </span>
                 <span className="text-base sm:text-xl text-[#8f97b0] font-normal">
-                  {viewMode === 'monthly' ? 'this month' : 'this session'}
+                  {viewMode === 'monthly' ? 'projected / month' : 'so far'}
                 </span>
               </div>
 
@@ -100,7 +134,7 @@ export default function TimeSavedWidget({
                     : 'text-[#8f97b0] hover:text-white'
                 }`}
               >
-                Monthly Overview
+                Projected
               </button>
               <button
                 type="button"
@@ -111,7 +145,7 @@ export default function TimeSavedWidget({
                     : 'text-[#8f97b0] hover:text-white'
                 }`}
               >
-                Active Session
+                Actual
               </button>
             </div>
 

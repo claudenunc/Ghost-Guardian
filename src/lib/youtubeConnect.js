@@ -57,6 +57,20 @@ export async function disconnectYouTube() {
   }
 }
 
+/** Lists the connected creator's own videos. Returns { videos, error?, code? }. */
+export async function listMyVideos() {
+  const headers = await authHeaders();
+  if (!headers) return { videos: [], error: 'Sign in first.', code: 'not_authenticated' };
+  try {
+    const res = await fetch('/api/youtube/my-videos', { headers });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { videos: [], error: data.error || `Failed (${res.status})`, code: data.code };
+    return data;
+  } catch {
+    return { videos: [], error: 'Could not reach the video service.', code: 'network' };
+  }
+}
+
 /**
  * Publishes a reply. Returns { success, id } or { success:false, code, error }.
  * code 'not_connected' means the creator hasn't linked a channel yet.

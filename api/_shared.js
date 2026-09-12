@@ -74,6 +74,44 @@ export function verifyState(state) {
   return crypto.timingSafeEqual(a, b) ? userId : null;
 }
 
+/**
+ * Loads the creator's YouTube connection and returns a valid access token,
+ * refreshing it if expired. Returns { accessToken } or { error }.
+ */
+export async function getValidAccessToken(client, creatorId) {
+  const { data: row } = await client
+    .from('youtube_connections')
+    .select('*')
+    .eq('creator_id', creatorId)
+    .maybeSingle();
+  if (!row) return { error: 'not_connected' };
+
+  const now = Date.now();
+  const expiry = row.token_expiry ? new Date(row.token_expiry).getTime() : 0;
+  if (row.access_token && expiry - 60000 > now) return { accessToken: row.access_token };
+  if (!row.refresh_token) return { accessToken: row.access_token };
+
+  const res = await fetch('https://oauth2.googleapis.com/token', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: row.refresh_token,
+      grant_type: 'refresh_token',
+    }),
+  });
+  const t = await res.json().catch(() => ({}));
+  if (!res.ok || !t.access_token) return { error: 'reauth' };
+
+  const newExpiry = t.expires_in ? new Date(Date.now() + t.expires_in * 1000).toISOString() : null;
+  await client
+    .from('youtube_connections')
+    .update({ access_token: t.access_token, token_expiry: newExpiry, updated_at: new Date().toISOString() })
+    .eq('creator_id', creatorId);
+  return { accessToken: t.access_token };
+}
+
 /** Reads a JSON body whether or not the runtime pre-parsed it. */
 export async function readJsonBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;

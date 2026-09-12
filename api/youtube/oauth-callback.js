@@ -17,7 +17,10 @@ export default async function handler(req, res) {
 
   const appUrl = process.env.APP_URL || `https://${req.headers.host}`;
   const back = (status) => {
-    res.writeHead(302, { Location: `${appUrl}/app/settings?youtube=${status}` });
+    // On success land on the inbox (where the creator picks a video to import);
+    // on error return to settings so they can retry the connection.
+    const dest = status === 'connected' ? '/app/inbox' : '/app/settings';
+    res.writeHead(302, { Location: `${appUrl}${dest}?youtube=${status}` });
     res.end();
   };
 

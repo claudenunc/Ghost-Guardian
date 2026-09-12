@@ -8,6 +8,8 @@ import {
   Download,
   KeyRound,
   X,
+  Loader2,
+  PlayCircle,
 } from 'lucide-react';
 import { Button, EmptyState, SectionTitle } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
@@ -15,6 +17,7 @@ import InboxPulse from '../components/comments/InboxPulse';
 import InboxLanes from '../components/comments/InboxLanes';
 import CommentCard from '../components/comments/CommentCard';
 import { extractYouTubeVideoId, normalizeIncomingYouTubeComment } from '../lib/youtubeUtils';
+import { getYouTubeConnection, listMyVideos, startYouTubeConnect } from '../lib/youtubeConnect';
 import {
   getCommentPriority,
   isHandled,
@@ -58,6 +61,64 @@ export default function CommentInbox() {
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [apiKeyInput, setApiKeyInput] = useState('');
 
+  // Connected-channel video picker state
+  const [connection, setConnection] = useState({ connected: false, channelTitle: null });
+  const [myVideos, setMyVideos] = useState([]);
+  const [loadingVideos, setLoadingVideos] = useState(false);
+  const [videosError, setVideosError] = useState(null);
+  const [connecting, setConnecting] = useState(false);
+  const [importingVideoId, setImportingVideoId] = useState(null);
+
+  const loadMyVideos = async () => {
+    setLoadingVideos(true);
+    setVideosError(null);
+    const result = await listMyVideos();
+    if (result.error) setVideosError(result.error);
+    setMyVideos(result.videos || []);
+    setLoadingVideos(false);
+  };
+
+  // On mount: detect connection, load the creator's videos, and surface the
+  // result of a just-completed OAuth round-trip (?youtube=connected).
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const conn = await getYouTubeConnection();
+      if (cancelled) return;
+      setConnection(conn);
+      if (conn.connected) loadMyVideos();
+    })();
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const status = params.get('youtube');
+      if (status === 'connected') {
+        showToast('YouTube channel connected. Pick a video to import its comments.', 'success');
+      } else if (status === 'error') {
+        showToast('YouTube connection did not complete. Try again from Settings.', 'error');
+      }
+      if (status) {
+        params.delete('youtube');
+        const clean = `${window.location.pathname}${params.toString() ? `?${params}` : ''}`;
+        window.history.replaceState({}, '', clean);
+      }
+    }
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleConnectChannel = async () => {
+    setConnecting(true);
+    try {
+      await startYouTubeConnect(); // redirects the browser to Google
+    } catch (err) {
+      showToast(err.message || 'Could not start the connection.', 'error');
+      setConnecting(false);
+    }
+  };
+
   useEffect(() => {
     if (!showApiKeyModal) return;
     const handleKeyDown = (e) => {
@@ -71,14 +132,12 @@ export default function CommentInbox() {
     return extractYouTubeVideoId(videoUrlInput);
   }, [videoUrlInput]);
 
-  const handleLoadRealComments = async (overrideApiKey = null) => {
-    const videoId = detectedVideoId || extractYouTubeVideoId(videoUrlInput);
+  // Shared ingest path for both the URL-paste bar and the video picker.
+  const ingestVideo = async (videoId, knownTitle = null, overrideApiKey = null) => {
     if (!videoId) {
       showToast('Please enter a valid YouTube video URL or 11-character video ID.', 'error');
       return;
     }
-
-    setIsLoadingYouTube(true);
     try {
       const activeKey = overrideApiKey !== null ? overrideApiKey : (apiKeyInput.trim() || '');
       const data = await fetchYouTubeComments({ videoId, apiKey: activeKey });
@@ -98,31 +157,50 @@ export default function CommentInbox() {
         return;
       }
 
-      // Normalize raw comments into Ghost Guardian comment models
-      const normalized = rawList.map((item) =>
-        normalizeIncomingYouTubeComment(item, { videoId })
-      );
+      const normalized = rawList.map((item) => normalizeIncomingYouTubeComment(item, { videoId }));
+      const meta = data.video || {};
 
       ingestComments({
         comments: normalized,
         video: {
           id: videoId,
-          title: `YouTube Video (${videoId})`,
-          publishedAt: new Date().toISOString(),
-          views: 12500,
-          likes: 850,
+          title: knownTitle || meta.title || `YouTube video ${videoId}`,
+          publishedAt: meta.publishedAt || new Date().toISOString(),
+          views: meta.viewCount,
+          likes: meta.likeCount,
           commentCount: normalized.length,
         },
       });
 
-      showToast(`Ingested ${normalized.length} real YouTube comments!`, 'success');
+      showToast(
+        `Imported ${normalized.length} comments${knownTitle ? ` from "${knownTitle}"` : ''}.`,
+        'success'
+      );
       setActiveLane('all');
-      setVideoUrlInput('');
+      setSelectedVideoId(videoId);
       setShowApiKeyModal(false);
     } catch (err) {
       showToast(`Failed to load comments: ${err.message}`, 'error');
+    }
+  };
+
+  const handleLoadRealComments = async (overrideApiKey = null) => {
+    const videoId = detectedVideoId || extractYouTubeVideoId(videoUrlInput);
+    setIsLoadingYouTube(true);
+    try {
+      await ingestVideo(videoId, null, overrideApiKey);
+      if (videoId) setVideoUrlInput('');
     } finally {
       setIsLoadingYouTube(false);
+    }
+  };
+
+  const handlePickVideo = async (video) => {
+    setImportingVideoId(video.videoId);
+    try {
+      await ingestVideo(video.videoId, video.title);
+    } finally {
+      setImportingVideoId(null);
     }
   };
 
@@ -319,6 +397,105 @@ export default function CommentInbox() {
                   title={vid.title || vid.id}
                 >
                   {vid.title ? vid.title.replace(/^YouTube Video \((.+)\)$/, '$1') : vid.id} ({count})
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Your Videos — pick one to import its comments (connected channels) */}
+      <div className="rounded-xl border border-white/10 bg-[#050505] p-4 sm:p-5 space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5">
+            <span className="flex size-7 items-center justify-center rounded-lg bg-[#0200F1]/15 text-[#0200F1] border border-[#0200F1]/30">
+              <PlayCircle size={14} />
+            </span>
+            <div>
+              <span className="font-display text-xs font-bold uppercase tracking-widest text-white block">
+                Your Videos
+              </span>
+              <span className="text-[11px] text-[#a0a0a0]">
+                {connection.connected
+                  ? <>Pick a video to import its comments{connection.channelTitle ? ` from ${connection.channelTitle}` : ''}.</>
+                  : 'Connect your channel to load your videos automatically.'}
+              </span>
+            </div>
+          </div>
+          {connection.connected && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={loadMyVideos}
+              disabled={loadingVideos}
+              className="shrink-0 gap-1.5"
+            >
+              {loadingVideos ? <Loader2 size={13} className="animate-spin" /> : <RotateCcw size={13} />}
+              Refresh
+            </Button>
+          )}
+        </div>
+
+        {!connection.connected ? (
+          <div className="rounded-lg border border-white/[0.08] bg-[#000000] p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <p className="text-xs text-[#a0a0a0] leading-relaxed max-w-lg">
+              Authorize Ghost Guardian on your YouTube channel to see every video here and
+              publish approved replies directly. Nothing posts without your approval.
+            </p>
+            <Button onClick={handleConnectChannel} disabled={connecting} className="shrink-0 gap-2">
+              {connecting ? <Loader2 size={14} className="animate-spin" /> : <Video size={14} />}
+              Connect YouTube
+            </Button>
+          </div>
+        ) : loadingVideos ? (
+          <div className="flex items-center gap-2 text-xs text-[#a0a0a0] py-6 justify-center">
+            <Loader2 size={16} className="animate-spin" /> Loading your videos…
+          </div>
+        ) : videosError ? (
+          <div className="rounded-lg border border-[#FF1400]/30 bg-[#FF1400]/10 p-3 text-xs text-[#FF1400]">
+            {videosError}
+          </div>
+        ) : myVideos.length === 0 ? (
+          <p className="text-xs text-[#a0a0a0] py-4 text-center">
+            No videos found on your channel yet.
+          </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {myVideos.map((video) => {
+              const importing = importingVideoId === video.videoId;
+              return (
+                <button
+                  key={video.videoId}
+                  type="button"
+                  onClick={() => handlePickVideo(video)}
+                  disabled={importing || isLoadingYouTube}
+                  className="group text-left rounded-lg border border-white/10 bg-[#000000] overflow-hidden hover:border-[#0200F1]/60 transition-colors disabled:opacity-60 cursor-pointer"
+                >
+                  <div className="relative aspect-video bg-[#0a0a0a] overflow-hidden">
+                    {video.thumbnail ? (
+                      <img
+                        src={video.thumbnail}
+                        alt=""
+                        loading="lazy"
+                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-[#a0a0a0]">
+                        <Video size={20} />
+                      </div>
+                    )}
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-white">
+                        {importing ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+                        {importing ? 'Importing…' : 'Import comments'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="p-2.5">
+                    <p className="text-xs text-white font-medium line-clamp-2 leading-snug">
+                      {video.title}
+                    </p>
+                  </div>
                 </button>
               );
             })}

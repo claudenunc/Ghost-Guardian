@@ -1,42 +1,32 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Brain,
-  TrendingUp,
   Lightbulb,
   Sparkles,
   Heart,
-  AlertTriangle,
   HelpCircle,
-  MessageSquare,
-  Flame,
-  CheckCircle,
   FolderPlus,
-  ArrowRight,
-  BookmarkCheck,
 } from 'lucide-react';
 import {
   Button,
   Chip,
   ClassificationChip,
   HumanMomentChip,
-  RiskChip,
   SectionTitle,
-  StatBlock,
+  EmptyState,
 } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 import {
   getAudienceSignals,
-  OpportunityStatus,
 } from '../domain/intelligence/intelligenceEngine';
 
 export default function AudienceIntelligence() {
   const {
-    comments,
-    commenters,
-    questionClusters,
-    topics,
-    contentOpportunities,
+    comments = [],
+    commenters = [],
+    questionClusters = [],
+    topics = [],
+    contentOpportunities = [],
     updateOpportunityStatus,
     showToast,
   } = useGuardian();
@@ -49,13 +39,14 @@ export default function AudienceIntelligence() {
   const [activeRoadmapFilter, setActiveRoadmapFilter] = useState('all');
 
   const filteredOpportunities = useMemo(() => {
+    if (!Array.isArray(contentOpportunities)) return [];
     if (activeRoadmapFilter === 'all') return contentOpportunities;
     return contentOpportunities.filter((op) => (op.status || 'new').toLowerCase() === activeRoadmapFilter);
   }, [contentOpportunities, activeRoadmapFilter]);
 
   const handleStatusChange = (id, newStatus) => {
-    updateOpportunityStatus(id, newStatus);
-    showToast(`Opportunity marked as ${newStatus.toUpperCase()}.`, 'info');
+    updateOpportunityStatus?.(id, newStatus);
+    showToast?.(`Opportunity marked as ${newStatus.toUpperCase()}.`, 'info');
   };
 
   return (
@@ -65,8 +56,8 @@ export default function AudienceIntelligence() {
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2">
-              <span className="pulse-dot bg-[#c084fc]" />
-              <span className="text-xs font-bold tracking-[0.2em] text-[#c084fc] uppercase">
+              <span className="pulse-dot bg-[#FF007A]" />
+              <span className="text-xs font-bold tracking-[0.2em] text-[#FF007A] uppercase font-mono">
                 Content Strategy Intelligence
               </span>
             </div>
@@ -79,7 +70,7 @@ export default function AudienceIntelligence() {
           </div>
 
           <Chip variant="human" className="font-bold">
-            ✨ {contentOpportunities.length} Active Opportunities
+            {contentOpportunities.length} Active Opportunities
           </Chip>
         </div>
       </div>
@@ -87,124 +78,145 @@ export default function AudienceIntelligence() {
       {/* 1. WHAT PEOPLE ARE ASKING (RECURRING QUESTION CLUSTERS) */}
       <section className="space-y-4">
         <SectionTitle
-          title="❓ What People Are Asking"
+          title="Recurring Question Clusters"
           subtitle="Recurring community questions automatically clustered across videos with evidence threads."
         />
 
-        <div className="space-y-3">
-          {signals.topQuestions.map((cluster) => (
-            <div key={cluster.id} className="ghost-panel p-5 space-y-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <Chip variant="attention">
-                    <HelpCircle size={12} /> {cluster.mentions} people asked this
+        {signals.topQuestions.length === 0 ? (
+          <EmptyState
+            icon={HelpCircle}
+            title="No recurring question clusters yet"
+            description="Ghost Guardian groups recurring questions once comments are ingested across your videos."
+          />
+        ) : (
+          <div className="space-y-3">
+            {signals.topQuestions.map((cluster) => (
+              <div key={cluster.id} className="ghost-panel p-5 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <Chip variant="attention">
+                      <HelpCircle size={12} /> {cluster.mentions} people asked this
+                    </Chip>
+                    <span className="text-xs font-mono text-[#00FF66] font-semibold">{cluster.momentum}</span>
+                  </div>
+                  <Chip variant="outline" className="text-xs">
+                    {cluster.theme}
                   </Chip>
-                  <Chip variant="outline">{cluster.trend}</Chip>
-                  <Chip variant="guardian">{cluster.urgency}</Chip>
                 </div>
-                <span className="text-xs text-[#8f97b0]">
-                  Clustered from {cluster.examples?.length || 2} distinct threads
-                </span>
-              </div>
 
-              <p className="text-base font-semibold text-white">"{cluster.question}"</p>
+                <h4 className="font-display text-base sm:text-lg text-white font-bold">
+                  "{cluster.canonicalQuestion}"
+                </h4>
 
-              {/* Representative evidence comments */}
-              <div className="space-y-1.5 pt-2 border-t border-white/5">
-                {cluster.examples?.map((c) => (
-                  <p key={c.id} className="text-xs text-[#8f97b0] italic">
-                    — "{c.text.slice(0, 140)}{c.text.length > 140 ? '...' : ''}"
-                  </p>
-                ))}
+                <div className="rounded-xl border border-white/5 bg-[#0d0f17]/70 p-3 text-xs text-[#8f97b0] italic">
+                  Example: "{cluster.evidenceSnippet}"
+                </div>
+
+                <div className="pt-2 border-t border-white/5 flex flex-wrap items-center justify-between gap-3 text-xs">
+                  <span className="text-[#8f97b0]">
+                    Action: <strong className="text-white">{cluster.suggestedAction}</strong>
+                  </span>
+                  <Link to="/app/inbox" className="text-xs text-[#0200F1] hover:underline">
+                    View Associated Comments →
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
-      {/* 2. CONTENT OPPORTUNITY ROADMAP */}
-      <section className="space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-2">
+      {/* 2. CONTENT ROADMAP & ACTIONABLE OPPORTUNITIES */}
+      <section className="space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <SectionTitle
-            title="💡 Content Opportunity Roadmap"
-            subtitle="Data-backed video concepts and episode angles derived directly from explicit audience requests."
+            title="Content Opportunities Roadmap"
+            subtitle="High-potential topics synthesized from repeated requests and unaddressed objections."
           />
 
-          {/* Filter Status Pills */}
-          <div className="flex flex-wrap gap-1.5 pt-1">
-            {['all', 'new', 'saved', 'exploring', 'planned', 'published'].map((st) => (
+          {/* Roadmap Filter Tabs */}
+          <div className="flex flex-wrap gap-1.5 p-1 rounded-xl bg-[#0d0f17] border border-white/10 text-xs">
+            {['all', 'new', 'saved', 'planned', 'published'].map((filter) => (
               <button
-                key={st}
+                key={filter}
                 type="button"
-                onClick={() => setActiveRoadmapFilter(st)}
-                className={`rounded-lg px-2.5 py-1 text-xs font-semibold uppercase transition-all cursor-pointer border ${
-                  activeRoadmapFilter === st
-                    ? 'border-[#4de1dc] bg-[#4de1dc]/15 text-[#4de1dc]'
-                    : 'border-white/10 text-[#8f97b0] hover:text-white'
+                onClick={() => setActiveRoadmapFilter(filter)}
+                className={`px-3 py-1.5 rounded-lg font-semibold capitalize transition-all cursor-pointer ${
+                  activeRoadmapFilter === filter
+                    ? 'bg-[#0200F1] text-white shadow-md'
+                    : 'text-[#8f97b0] hover:text-white'
                 }`}
               >
-                {st}
+                {filter}
               </button>
             ))}
           </div>
         </div>
 
-        <div className="grid gap-4 lg:grid-cols-3">
-          {filteredOpportunities.map((op) => (
-            <div
-              key={op.id}
-              className="ghost-panel ghost-glow p-6 flex flex-col justify-between space-y-4 border-[#4de1dc]/25"
-            >
-              <div>
-                <div className="flex items-center justify-between gap-2">
-                  <Chip variant="attention">
-                    <Lightbulb size={12} /> {op.status || 'new'}
-                  </Chip>
-                  <span className="text-xs font-mono text-[#34d399] font-bold">{op.trend}</span>
+        {filteredOpportunities.length === 0 ? (
+          <EmptyState
+            icon={Lightbulb}
+            title="No content opportunities detected"
+            description="Opportunities will be synthesized as viewers ask for specific topics, clarifications, and deep dives."
+          />
+        ) : (
+          <div className="grid gap-4 lg:grid-cols-3">
+            {filteredOpportunities.map((op) => (
+              <div
+                key={op.id}
+                className="ghost-panel ghost-glow p-6 flex flex-col justify-between space-y-4 border-white/10"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Chip variant="attention">
+                      <Lightbulb size={12} /> {op.status || 'new'}
+                    </Chip>
+                    <span className="text-xs font-mono text-[#00FF66] font-bold">{op.trend}</span>
+                  </div>
+
+                  <h4 className="mt-3 font-display text-base sm:text-lg text-white font-bold">
+                    {op.title}
+                  </h4>
+                  <p className="mt-2 text-xs text-[#8f97b0] leading-relaxed">{op.evidence}</p>
+
+                  <div className="mt-4 rounded-xl border border-white/10 bg-[#0d0f17]/70 p-3.5 space-y-1">
+                    <span className="text-[10px] tracking-wider text-[#0200F1] uppercase font-bold">
+                      Suggested Format & Angle:
+                    </span>
+                    <p className="text-xs text-[#e4e7f1] leading-relaxed">{op.suggestedAngle}</p>
+                  </div>
                 </div>
 
-                <h4 className="mt-3 font-display text-base sm:text-lg text-white font-bold">
-                  {op.title}
-                </h4>
-                <p className="mt-2 text-xs text-[#8f97b0] leading-relaxed">{op.evidence}</p>
+                {/* Action bar and status selector */}
+                <div className="pt-3 border-t border-white/5 space-y-2 text-xs">
+                  <div className="flex items-center justify-between text-[#8f97b0]">
+                    <span>{op.mentions} mentions</span>
+                    <span className="font-semibold text-white">{op.explicitRequests} direct asks</span>
+                  </div>
 
-                <div className="mt-4 rounded-xl border border-white/10 bg-[#0d0f17]/70 p-3.5 space-y-1">
-                  <span className="text-[10px] tracking-wider text-[#4de1dc] uppercase font-bold">
-                    Suggested Format & Angle:
-                  </span>
-                  <p className="text-xs text-[#e4e7f1] leading-relaxed">{op.suggestedAngle}</p>
+                  <div className="flex items-center justify-between gap-2 pt-1">
+                    <select
+                      value={op.status || 'new'}
+                      onChange={(e) => handleStatusChange(op.id, e.target.value)}
+                      className="rounded-lg border border-white/10 bg-[#0d0f17] px-2.5 py-1 text-xs text-white font-semibold focus:outline-none"
+                    >
+                      <option value="new">Status: New</option>
+                      <option value="saved">Status: Saved</option>
+                      <option value="exploring">Status: Exploring</option>
+                      <option value="planned">Status: Planned</option>
+                      <option value="published">Status: Published</option>
+                      <option value="dismissed">Status: Dismissed</option>
+                    </select>
+
+                    <Link to="/app/inbox" className="text-xs text-[#0200F1] hover:underline">
+                      View Evidence →
+                    </Link>
+                  </div>
                 </div>
               </div>
-
-              {/* Action bar and status selector */}
-              <div className="pt-3 border-t border-white/5 space-y-2 text-xs">
-                <div className="flex items-center justify-between text-[#8f97b0]">
-                  <span>{op.mentions} mentions</span>
-                  <span className="font-semibold text-white">{op.explicitRequests} direct asks</span>
-                </div>
-
-                <div className="flex items-center justify-between gap-2 pt-1">
-                  <select
-                    value={op.status || 'new'}
-                    onChange={(e) => handleStatusChange(op.id, e.target.value)}
-                    className="rounded-lg border border-white/10 bg-[#0d0f17] px-2.5 py-1 text-xs text-[#4de1dc] font-semibold focus:outline-none"
-                  >
-                    <option value="new">Status: New</option>
-                    <option value="saved">Status: Saved</option>
-                    <option value="exploring">Status: Exploring</option>
-                    <option value="planned">Status: Planned</option>
-                    <option value="published">Status: Published</option>
-                    <option value="dismissed">Status: Dismissed</option>
-                  </select>
-
-                  <Link to="/app/inbox" className="text-xs text-[#4de1dc] hover:underline">
-                    View Evidence →
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* 3. TWO COLUMNS: HUMAN SIGNALS & CONSTRUCTIVE SIGNALS */}
@@ -212,64 +224,80 @@ export default function AudienceIntelligence() {
         {/* HUMAN SIGNALS */}
         <section className="space-y-4">
           <SectionTitle
-            title="🤍 Human Signals"
+            title="Human Signals"
             subtitle="Gratitude, personal impact, and emotional connections separated from ordinary metrics."
           />
 
-          <div className="space-y-3">
-            {signals.humanSignals.map((c) => {
-              const person = commenters.find((p) => p.id === c.commenterId);
-              return (
-                <div
-                  key={c.id}
-                  className="ghost-panel p-4 space-y-2 border-[#FF007A]/20 bg-[#000000]"
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-white">{person?.displayName || 'User'}</span>
-                    <HumanMomentChip />
+          {signals.humanSignals.length === 0 ? (
+            <EmptyState
+              icon={Heart}
+              title="No human moments flagged"
+              description="Meaningful viewer disclosures and personal impact comments will appear here."
+            />
+          ) : (
+            <div className="space-y-3">
+              {signals.humanSignals.map((c) => {
+                const person = commenters.find((p) => p.id === c.commenterId);
+                return (
+                  <div
+                    key={c.id}
+                    className="ghost-panel p-4 space-y-2 border-[#FF007A]/20 bg-[#000000]"
+                  >
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-white">{person?.displayName || c.author || 'Viewer'}</span>
+                      <HumanMomentChip />
+                    </div>
+                    <p className="text-xs sm:text-sm text-white italic leading-relaxed">
+                      "{c.text}"
+                    </p>
+                    <div className="flex justify-end pt-1">
+                      <Link to="/app/inbox" className="text-[11px] text-[#FF007A] hover:underline">
+                        Open in Inbox →
+                      </Link>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-white italic leading-relaxed">
-                    "{c.text}"
-                  </p>
-                  <div className="flex justify-end pt-1">
-                    <Link to="/app/inbox" className="text-[11px] text-[#FF007A] hover:underline">
-                      Open in Inbox →
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
 
         {/* CONSTRUCTIVE SIGNALS */}
         <section className="space-y-4">
           <SectionTitle
-            title="💡 Constructive Feedback"
+            title="Constructive Feedback"
             subtitle="Substantive pushback, counter-arguments, and requests for depth."
           />
 
-          <div className="space-y-3">
-            {signals.constructiveSignals.map((c) => {
-              const person = commenters.find((p) => p.id === c.commenterId);
-              return (
-                <div key={c.id} className="ghost-panel p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-white">{person?.displayName || 'User'}</span>
-                    <ClassificationChip value={c.classification} />
+          {signals.constructiveSignals.length === 0 ? (
+            <EmptyState
+              icon={Sparkles}
+              title="No constructive critique yet"
+              description="Substantive intellectual feedback and counter-arguments will cluster here."
+            />
+          ) : (
+            <div className="space-y-3">
+              {signals.constructiveSignals.map((c) => {
+                const person = commenters.find((p) => p.id === c.commenterId);
+                return (
+                  <div key={c.id} className="ghost-panel p-4 space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="font-bold text-white">{person?.displayName || c.author || 'Viewer'}</span>
+                      <ClassificationChip value={c.classification} />
+                    </div>
+                    <p className="text-xs sm:text-sm text-white italic leading-relaxed">
+                      "{c.text}"
+                    </p>
+                    <div className="flex justify-end pt-1">
+                      <Link to="/app/inbox" className="text-[11px] text-[#0200F1] hover:underline">
+                        Review Thread →
+                      </Link>
+                    </div>
                   </div>
-                  <p className="text-xs sm:text-sm text-white italic leading-relaxed">
-                    "{c.text}"
-                  </p>
-                  <div className="flex justify-end pt-1">
-                    <Link to="/app/inbox" className="text-[11px] text-[#4de1dc] hover:underline">
-                      Review Thread →
-                    </Link>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
         </section>
       </div>
     </div>

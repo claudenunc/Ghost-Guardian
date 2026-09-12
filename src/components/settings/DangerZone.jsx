@@ -10,26 +10,63 @@ import { Button, Chip } from '../guardian/atoms';
 import { useGuardian } from '../../lib/store';
 
 export default function DangerZone() {
-  const { resetDemo, signOut, isDemo, showToast } = useGuardian();
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const { signOut, showToast, dispatch } = useGuardian();
   const [showClearConfirm, setShowClearConfirm] = useState(false);
-
-  const handleReset = () => {
-    resetDemo();
-    setShowResetConfirm(false);
-  };
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleClearLocalStorage = () => {
-    localStorage.clear();
-    resetDemo();
-    setShowClearConfirm(false);
-    showToast('Local browser storage cleared and reset.', 'info');
+    try {
+      localStorage.clear();
+      showToast('Local browser cache cleared.', 'info');
+      setShowClearConfirm(false);
+      window.location.reload();
+    } catch {
+      showToast('Failed to clear local cache.', 'error');
+    }
+  };
+
+  const handleDeleteWorkspaceData = async () => {
+    setIsDeleting(true);
+    try {
+      // Clear localStorage cache
+      localStorage.clear();
+      // Dispatch reset to clean empty production workspace
+      dispatch?.({
+        type: 'RESET_WORKSPACE',
+        payload: {
+          creator: {},
+          videos: [],
+          comments: [],
+          commenters: [],
+          commentStates: {},
+          voice: { warmth: 75, directness: 65, humor: 40, formality: 40 },
+          settings: { mode: 'balanced', paused: false },
+          policy: {},
+          knowledge: [],
+          learning: [],
+          activity: [],
+          contentOpportunities: [],
+          communityHealth: {},
+          weeklyDigest: {},
+          sentimentTrend: [],
+          questionClusters: [],
+          topics: [],
+        },
+      });
+      setShowDeleteConfirm(false);
+      showToast('All workspace data deleted.', 'info');
+    } catch (err) {
+      showToast('Failed to delete workspace data.', 'error');
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
-    <section className="ghost-panel p-6 sm:p-8 space-y-6 border-[#f87171]/25 bg-gradient-to-r from-[#1a1215]/80 via-[#141217]/90 to-[#121422]/90">
+    <section className="ghost-panel p-6 sm:p-8 space-y-6 border-[#FF1400]/25 bg-gradient-to-r from-[#1a1215]/80 via-[#141217]/90 to-[#121422]/90">
       <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-white/5">
-        <div className="flex items-center gap-2 text-[#f87171]">
+        <div className="flex items-center gap-2 text-[#FF1400]">
           <AlertTriangle size={18} />
           <h3 className="font-display text-lg text-white font-bold">Danger Zone</h3>
         </div>
@@ -37,33 +74,14 @@ export default function DangerZone() {
       </div>
 
       <div className="divide-y divide-white/5">
-        {/* Reset Demo Fixtures */}
-        <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h4 className="text-xs sm:text-sm font-semibold text-white">
-              Reset Demo Workspace
-            </h4>
-            <p className="text-xs text-[#8f97b0] mt-0.5 leading-relaxed">
-              Restore the fictional creator data, comments, voice profile, and boundary policies to their initial demo state.
-            </p>
-          </div>
-          <Button
-            size="sm"
-            variant="destructive"
-            onClick={() => setShowResetConfirm(true)}
-          >
-            <RotateCcw size={14} /> Reset Demo Workspace
-          </Button>
-        </div>
-
         {/* Clear Local Cache */}
         <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h4 className="text-xs sm:text-sm font-semibold text-white">
-              Clear Local Browser Storage
+              Clear Local Browser Cache
             </h4>
             <p className="text-xs text-[#8f97b0] mt-0.5 leading-relaxed">
-              Purges any cached preferences and saved state stored in your local browser storage.
+              Purges local cache and offline snapshots stored in your browser.
             </p>
           </div>
           <Button
@@ -72,6 +90,25 @@ export default function DangerZone() {
             onClick={() => setShowClearConfirm(true)}
           >
             <Trash2 size={14} /> Clear Local Cache
+          </Button>
+        </div>
+
+        {/* Delete Workspace Data */}
+        <div className="py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h4 className="text-xs sm:text-sm font-semibold text-[#FF1400]">
+              Delete My Workspace Data
+            </h4>
+            <p className="text-xs text-[#8f97b0] mt-0.5 leading-relaxed">
+              Permanently purges all your comments, voice examples, and policy rules from your workspace.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={() => setShowDeleteConfirm(true)}
+          >
+            <AlertTriangle size={14} /> Delete Workspace Data
           </Button>
         </div>
 
@@ -91,50 +128,52 @@ export default function DangerZone() {
         </div>
       </div>
 
-      {/* Confirmation Modal: Reset Demo */}
-      {showResetConfirm && (
+      {/* Confirmation Modal: Clear Local Cache */}
+      {showClearConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-[#f87171]/40 bg-[#161215] p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-[#f87171]">
-              <ShieldAlert size={20} />
-              <h4 className="font-display text-base font-bold text-white">
-                Confirm Demo Reset
-              </h4>
-            </div>
+          <div className="w-full max-w-md rounded-2xl border border-white/20 bg-[#121625] p-6 space-y-4 shadow-2xl">
+            <h4 className="font-display text-base font-bold text-white">
+              Clear local browser cache?
+            </h4>
             <p className="text-xs text-[#8f97b0] leading-relaxed">
-              This will overwrite all active comment approvals, voice calibrations, and custom policies with fresh demo fixtures.
+              This will remove cached workspace snapshots from your browser and reload fresh state.
             </p>
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowResetConfirm(false)}>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowClearConfirm(false)}>
                 Cancel
               </Button>
-              <Button size="sm" variant="destructive" onClick={handleReset}>
-                Yes, Reset Workspace
+              <Button size="sm" variant="default" onClick={handleClearLocalStorage}>
+                Confirm & Clear
               </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Confirmation Modal: Clear Local Cache */}
-      {showClearConfirm && (
+      {/* Confirmation Modal: Delete Workspace Data */}
+      {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-          <div className="w-full max-w-md rounded-2xl border border-[#fbbf24]/40 bg-[#161412] p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center gap-2 text-[#fbbf24]">
-              <AlertTriangle size={20} />
+          <div className="w-full max-w-md rounded-2xl border border-[#FF1400]/40 bg-[#161215] p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center gap-2 text-[#FF1400]">
+              <ShieldAlert size={20} />
               <h4 className="font-display text-base font-bold text-white">
-                Confirm Clear Cache
+                Delete all workspace data?
               </h4>
             </div>
             <p className="text-xs text-[#8f97b0] leading-relaxed">
-              This will clear all browser storage and re-initialize the workspace.
+              This action cannot be undone. All imported comments, comment states, and voice configurations associated with your creator account will be permanently cleared.
             </p>
-            <div className="flex items-center justify-end gap-2.5 pt-2">
-              <Button size="sm" variant="ghost" onClick={() => setShowClearConfirm(false)}>
+            <div className="flex justify-end gap-3 pt-2">
+              <Button size="sm" variant="ghost" onClick={() => setShowDeleteConfirm(false)}>
                 Cancel
               </Button>
-              <Button size="sm" onClick={handleClearLocalStorage}>
-                Clear & Reload
+              <Button
+                size="sm"
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={handleDeleteWorkspaceData}
+              >
+                {isDeleting ? 'Deleting...' : 'Confirm Deletion'}
               </Button>
             </div>
           </div>

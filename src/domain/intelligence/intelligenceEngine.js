@@ -71,11 +71,13 @@ export function getGuardianSummary(comments = [], commentStates = {}) {
     if (isShieldVault(c)) shieldedCount++;
   });
 
-  const narrative = `While you were away, ${totalArrived} comments arrived. Ghost Guardian handled ${handledCount} routine interactions, shielded ${shieldedCount} hostile comments, and surfaced ${needsYouCount} conversations worth your attention.${
-    humanMomentsCount > 0
-      ? ` ${humanMomentsCount === 1 ? 'One comment' : `${humanMomentsCount} comments`} may deserve a personal response.`
-      : ''
-  }`;
+  const narrative = totalArrived === 0
+    ? 'Your perimeter is quiet. When comments arrive, Ghost Guardian will filter spam, isolate threats, and draft authentic responses for your review.'
+    : `While you were away, ${totalArrived} comments arrived. Ghost Guardian handled ${handledCount} routine interactions, shielded ${shieldedCount} hostile comments, and surfaced ${needsYouCount} conversations worth your attention.${
+        humanMomentsCount > 0
+          ? ` ${humanMomentsCount === 1 ? 'One comment' : `${humanMomentsCount} comments`} may deserve a personal response.`
+          : ''
+      }`;
 
   return {
     totalArrived,
@@ -241,8 +243,8 @@ export function getAnalyticsSummary(comments = [], commentStates = {}, activity 
   const totalHandled = approved + edited + rejected + ignored + escalated + silenced;
   const totalReplied = approved + edited;
 
-  const voiceAlignmentRate = totalReplied > 0 ? Math.round((approved / totalReplied) * 100) : 85;
-  const editRate = totalReplied > 0 ? Math.round((edited / totalReplied) * 100) : 15;
+  const voiceAlignmentRate = totalReplied > 0 ? Math.round((approved / totalReplied) * 100) : 0;
+  const editRate = totalReplied > 0 ? Math.round((edited / totalReplied) * 100) : 0;
 
   const shieldedHostile = comments.filter((c) => isShieldVault(c)).length;
   const spamFiltered = comments.filter((c) => c.classification === 'SPAM' || c.classification === 'SCAM').length;

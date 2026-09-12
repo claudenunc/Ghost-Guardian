@@ -2,32 +2,32 @@ import React, { useMemo } from 'react';
 import {
   Shield,
   Clock,
-  CheckCircle2,
-  Edit3,
-  RefreshCw,
-  EyeOff,
-  AlertOctagon,
   Sparkles,
   TrendingUp,
-  Heart,
-  HelpCircle,
-  BarChart2,
 } from 'lucide-react';
 import {
   Chip,
   SectionTitle,
   StatBlock,
+  EmptyState,
 } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
 import { getAnalyticsSummary } from '../domain/intelligence/intelligenceEngine';
 
 export default function Analytics() {
-  const { comments, commentStates, activity, sentimentTrend } = useGuardian();
+  const { comments = [], commentStates = {}, activity = [], sentimentTrend = [] } = useGuardian();
 
   const stats = useMemo(
     () => getAnalyticsSummary(comments, commentStates, activity),
     [comments, commentStates, activity]
   );
+
+  const hasReplies = (stats.approved + stats.edited) > 0;
+  const highestPositive = useMemo(() => {
+    if (!Array.isArray(sentimentTrend) || sentimentTrend.length === 0) return null;
+    const max = Math.max(...sentimentTrend.map((d) => d.positive || 0));
+    return max > 0 ? `${max}% positive peak` : null;
+  }, [sentimentTrend]);
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 pb-16">
@@ -65,37 +65,37 @@ export default function Analytics() {
       </div>
 
       {/* 2. CREATOR TIME & ESTIMATE DISCLOSURE */}
-      <section className="ghost-panel p-6 sm:p-8 space-y-4 border-[#4de1dc]/30 bg-gradient-to-r from-[#141829]/95 to-[#121422]/95">
+      <section className="ghost-panel p-6 sm:p-8 space-y-4 border-[#0200F1]/30 bg-gradient-to-r from-[#141829]/95 to-[#121422]/95">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <Clock size={18} className="text-[#4de1dc]" />
-            <h3 className="font-display text-base text-white">Estimated Creator Attention Protected</h3>
+            <Clock size={18} className="text-[#0200F1]" />
+            <h3 className="font-display text-base text-white font-bold">Estimated Creator Attention Protected</h3>
           </div>
-          <Chip variant="guardian">Demo Intelligence</Chip>
+          <Chip variant="outline" className="font-mono text-[#a0a0a0]">Attention Valuation</Chip>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3 pt-2">
           <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
-            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Replies Approved</span>
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold font-mono">Replies Approved</span>
             <p className="text-2xl font-display font-bold text-white mt-1">{stats.approved + stats.edited}</p>
-            <p className="text-[11px] text-[#34d399] mt-0.5">~3 min per reply avoided</p>
+            <p className="text-[11px] text-[#00FF66] mt-0.5">~3 min per reply avoided</p>
           </div>
 
           <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
-            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Spam & Bait Silenced</span>
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold font-mono">Spam & Bait Silenced</span>
             <p className="text-2xl font-display font-bold text-white mt-1">{stats.silenced + stats.spamFiltered}</p>
             <p className="text-[11px] text-[#8f97b0] mt-0.5">~2 min cognitive drain avoided</p>
           </div>
 
           <div className="p-4 rounded-xl border border-white/5 bg-[#0d0f17]/70">
-            <span className="text-[10px] uppercase text-[#8f97b0] font-bold">Total Estimated Time</span>
-            <p className="text-2xl font-display font-bold text-[#4de1dc] mt-1">~{stats.estimatedMinutesSaved} min</p>
+            <span className="text-[10px] uppercase text-[#8f97b0] font-bold font-mono">Total Estimated Time</span>
+            <p className="text-2xl font-display font-bold text-[#0200F1] mt-1">~{stats.estimatedMinutesSaved} min</p>
             <p className="text-[11px] text-[#8f97b0] mt-0.5">Cumulative time protected</p>
           </div>
         </div>
 
-        <p className="text-xs text-[#8f97b0] pt-2 border-t border-white/5 italic">
-          ℹ️ Estimated attention protected is calculated deterministically from handled actions in your current workspace, assuming ~3 minutes saved per handled interaction.
+        <p className="text-xs text-[#8f97b0] pt-2 border-t border-white/5">
+          Estimated attention protected is calculated deterministically from handled interactions in your workspace, assuming ~3 minutes saved per drafted reply.
         </p>
       </section>
 
@@ -106,47 +106,58 @@ export default function Analytics() {
           <div className="flex items-center justify-between pb-2 border-b border-white/5">
             <div className="flex items-center gap-2">
               <Sparkles size={18} className="text-[#c084fc]" />
-              <h3 className="font-display text-base text-white">Voice Calibration & Alignment</h3>
+              <h3 className="font-display text-base text-white font-bold">Voice Calibration & Alignment</h3>
             </div>
-            <Chip variant="human">{stats.voiceAlignmentRate}% alignment</Chip>
+            <Chip variant={hasReplies ? 'human' : 'outline'}>
+              {hasReplies ? `${stats.voiceAlignmentRate}% alignment` : 'No replies yet'}
+            </Chip>
           </div>
 
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
-                <span>Approved Without Edits</span>
-                <span className="text-[#34d399] font-mono">{stats.voiceAlignmentRate}%</span>
+          {hasReplies ? (
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
+                  <span>Approved Without Edits</span>
+                  <span className="text-[#00FF66] font-mono">{stats.voiceAlignmentRate}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
+                  <div
+                    className="h-full bg-[#00FF66] rounded-full transition-all duration-500"
+                    style={{ width: `${stats.voiceAlignmentRate}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-[#8f97b0] mt-1">
+                  Drafts approved with zero creator modifications
+                </p>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
-                <div
-                  className="h-full bg-[#34d399] rounded-full transition-all duration-500"
-                  style={{ width: `${stats.voiceAlignmentRate}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-[#8f97b0] mt-1">
-                Drafts approved with zero creator modifications
-              </p>
-            </div>
 
-            <div>
-              <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
-                <span>Edited Before Publishing</span>
-                <span className="text-[#4de1dc] font-mono">{stats.editRate}%</span>
+              <div>
+                <div className="flex justify-between text-xs font-semibold text-white mb-1.5">
+                  <span>Edited Before Publishing</span>
+                  <span className="text-[#0200F1] font-mono">{stats.editRate}%</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
+                  <div
+                    className="h-full bg-[#0200F1] rounded-full transition-all duration-500"
+                    style={{ width: `${stats.editRate}%` }}
+                  />
+                </div>
+                <p className="text-[11px] text-[#8f97b0] mt-1">
+                  Drafts fine-tuned and saved back into your Voice Library
+                </p>
               </div>
-              <div className="h-2 w-full rounded-full bg-[#1e2235] overflow-hidden">
-                <div
-                  className="h-full bg-[#4de1dc] rounded-full transition-all duration-500"
-                  style={{ width: `${stats.editRate}%` }}
-                />
-              </div>
-              <p className="text-[11px] text-[#8f97b0] mt-1">
-                Drafts fine-tuned and saved back into your Voice Library
+            </div>
+          ) : (
+            <div className="py-6 text-center text-xs text-[#8f97b0] space-y-2">
+              <p className="text-white font-semibold">No replies approved yet</p>
+              <p className="max-w-xs mx-auto">
+                Approve or edit AI drafts in your Inbox to begin measuring your authentic voice alignment.
               </p>
             </div>
-          </div>
+          )}
 
           <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-[#8f97b0]">
-            <span>Your edits are saved to your Voice Library and improve future drafts.</span>
+            <span>Your edits are saved to your Voice Library to improve future drafts.</span>
           </div>
         </section>
 
@@ -154,10 +165,10 @@ export default function Analytics() {
         <section className="ghost-panel p-6 space-y-5">
           <div className="flex items-center justify-between pb-2 border-b border-white/5">
             <div className="flex items-center gap-2">
-              <Shield size={18} className="text-[#4de1dc]" />
-              <h3 className="font-display text-base text-white">Guardian Decision Distribution</h3>
+              <Shield size={18} className="text-[#0200F1]" />
+              <h3 className="font-display text-base text-white font-bold">Guardian Decision Distribution</h3>
             </div>
-            <Chip variant="outline">{stats.decisions.length} decision categories</Chip>
+            <Chip variant="outline" className="font-mono">{stats.decisions.length} categories</Chip>
           </div>
 
           <div className="space-y-3">
@@ -185,53 +196,63 @@ export default function Analytics() {
       <section className="ghost-panel p-6 space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-white/5">
           <div>
-            <h3 className="font-display text-base text-white">Community Sentiment Trend</h3>
+            <h3 className="font-display text-base text-white font-bold">Community Sentiment Trend</h3>
             <p className="text-xs text-[#8f97b0] mt-0.5">
               Rule-based sentiment distribution over the past 7 days.
             </p>
           </div>
-          <Chip variant="positive">72% positive peak</Chip>
+          {highestPositive && (
+            <Chip variant="positive">{highestPositive}</Chip>
+          )}
         </div>
 
-        <div className="space-y-3 pt-2">
-          {sentimentTrend.map((d) => (
-            <div key={d.day} className="flex items-center gap-3">
-              <span className="w-10 text-xs font-mono text-[#8f97b0] font-semibold">{d.day}</span>
-              <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-[#1e2235]">
-                <span
-                  style={{ width: `${d.positive}%` }}
-                  className="bg-[#34d399]"
-                  title={`Positive: ${d.positive}%`}
-                />
-                <span
-                  style={{ width: `${d.neutral}%` }}
-                  className="bg-[#8f97b0]/40"
-                  title={`Neutral: ${d.neutral}%`}
-                />
-                <span
-                  style={{ width: `${d.negative}%` }}
-                  className="bg-[#f87171]"
-                  title={`Negative: ${d.negative}%`}
-                />
+        {Array.isArray(sentimentTrend) && sentimentTrend.length > 0 ? (
+          <div className="space-y-3 pt-2">
+            {sentimentTrend.map((d) => (
+              <div key={d.day} className="flex items-center gap-3">
+                <span className="w-10 text-xs font-mono text-[#8f97b0] font-semibold">{d.day}</span>
+                <div className="flex h-3 flex-1 overflow-hidden rounded-full bg-[#1e2235]">
+                  <span
+                    style={{ width: `${d.positive}%` }}
+                    className="bg-[#00FF66]"
+                    title={`Positive: ${d.positive}%`}
+                  />
+                  <span
+                    style={{ width: `${d.neutral}%` }}
+                    className="bg-[#8f97b0]/40"
+                    title={`Neutral: ${d.neutral}%`}
+                  />
+                  <span
+                    style={{ width: `${d.negative}%` }}
+                    className="bg-[#FF1400]"
+                    title={`Negative: ${d.negative}%`}
+                  />
+                </div>
+                <span className="w-14 text-right text-xs font-mono text-white font-bold">
+                  {d.positive}% pos
+                </span>
               </div>
-              <span className="w-14 text-right text-xs font-mono text-white font-bold">
-                {d.positive}% pos
+            ))}
+
+            <div className="flex items-center justify-end gap-4 text-[11px] text-[#8f97b0] pt-3 border-t border-white/5">
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-[#00FF66]" /> Positive
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-[#8f97b0]/50" /> Neutral
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-[#FF1400]" /> Critical
               </span>
             </div>
-          ))}
-
-          <div className="flex items-center justify-end gap-4 text-[11px] text-[#8f97b0] pt-3 border-t border-white/5">
-            <span className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#34d399]" /> Positive
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#8f97b0]/50" /> Neutral
-            </span>
-            <span className="flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-[#f87171]" /> Critical
-            </span>
           </div>
-        </div>
+        ) : (
+          <EmptyState
+            icon={TrendingUp}
+            title="No sentiment trend recorded yet"
+            description="Weekly sentiment distributions will plot here as comments are imported and classified."
+          />
+        )}
       </section>
     </div>
   );

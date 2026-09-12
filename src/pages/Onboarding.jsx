@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  Shield,
   ShieldCheck,
-  Zap,
-  Lock,
   ArrowRight,
-  Sparkles,
   CheckCircle2,
-  Play,
-  X,
   Clock,
   MessageSquare,
-  Bot,
   Video,
-  HelpCircle,
-  Heart,
-  ChevronRight,
-  ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { GhostMark, Chip, Button } from '../components/guardian/atoms';
 import { useGuardian } from '../lib/store';
+import { extractYouTubeVideoId } from '../lib/youtubeUtils';
 
 const STORAGE_KEY = 'ghost-guardian-onboarding-step';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { completeOnboarding, showToast, addLearningExample, updateVoice } = useGuardian();
+  const {
+    completeOnboarding,
+    showToast,
+    addLearningExample,
+    fetchYouTubeComments,
+    ingestComments,
+    session,
+    creator,
+  } = useGuardian();
 
   // Load initial step from localStorage or default to 1
   const [step, setStep] = useState(() => {
@@ -35,21 +34,25 @@ export default function Onboarding() {
     return parsed >= 1 && parsed <= 4 ? parsed : 1;
   });
 
+  // Creator identity state
+  const [displayName, setDisplayName] = useState(
+    session?.user?.user_metadata?.name || creator?.displayName || ''
+  );
+  const [channelName, setChannelName] = useState(creator?.channelName || '');
+
   // Step 2 state: Voice examples
   const [examples, setExamples] = useState({
-    ex1: "Two years is a long time to stay with the show. Glad the 'bottoming out' section landed — that was the one we argued about most before publishing.",
-    ex2: "That's fair criticism. That segment was compressed for time, but which objection do you think deserved more attention?",
-    ex3: "Disagreement is always welcome here when there's a real argument attached. Thanks for tuning in!",
+    ex1: "Thanks for watching! Glad that explanation clicked for you.",
+    ex2: "That's a fair point. We had to compress that section, but I appreciate the thoughtful feedback.",
+    ex3: "Disagreement is always welcome here when there's an actual argument attached. Thanks for tuning in!",
     ex4: '',
     ex5: '',
   });
 
-  // Step 3 state: Platform
-  const [selectedPlatform, setSelectedPlatform] = useState('youtube'); // 'youtube' | 'demo'
-  const [isConnecting, setIsConnecting] = useState(false);
-
-  // Demo video modal state for Step 1
-  const [showDemoVideo, setShowDemoVideo] = useState(false);
+  // Step 4 state: First video URL import
+  const [videoUrl, setVideoUrl] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+  const [importError, setImportError] = useState('');
 
   // Save step to localStorage
   useEffect(() => {
@@ -66,8 +69,7 @@ export default function Onboarding() {
     setStep(targetStep);
   };
 
-  const handleFinish = () => {
-    // Save voice examples into learning store
+  const handleFinish = async (skipImport = false) => {
     const validExamples = [examples.ex1, examples.ex2, examples.ex3, examples.ex4, examples.ex5].filter(Boolean);
     validExamples.forEach((ex) => {
       addLearningExample?.({
@@ -78,8 +80,45 @@ export default function Onboarding() {
       });
     });
 
+    const finalName = displayName.trim() || session?.user?.user_metadata?.name || 'Creator';
+    const finalChannel = channelName.trim() || 'My YouTube Channel';
+    const finalHandle = `@${finalName.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'creator'}`;
+
+    if (!skipImport && videoUrl.trim()) {
+      const videoId = extractYouTubeVideoId(videoUrl);
+      if (!videoId) {
+        setImportError('Please enter a valid YouTube video URL or 11-character video ID.');
+        return;
+      }
+
+      setIsImporting(true);
+      setImportError('');
+
+      try {
+        const data = await fetchYouTubeComments({ videoId });
+        if (data.error) {
+          setImportError(data.error);
+          setIsImporting(false);
+          return;
+        }
+
+        if (Array.isArray(data.comments) && data.comments.length > 0) {
+          ingestComments({ comments: data.comments, video: data.video });
+          showToast(`Imported ${data.comments.length} comments from YouTube!`, 'success');
+        }
+      } catch (err) {
+        console.warn('Onboarding comment import failed:', err);
+      } finally {
+        setIsImporting(false);
+      }
+    }
+
     completeOnboarding({
-      creator: { displayName: 'Alex Chen', channelName: 'The Long Signal' },
+      creator: {
+        displayName: finalName,
+        channelName: finalChannel,
+        handle: finalHandle,
+      },
       voice: { approvedExamples: validExamples },
       mode: 'copilot',
     });
@@ -90,18 +129,23 @@ export default function Onboarding() {
   };
 
   const handleSkipAll = () => {
+    const finalName = session?.user?.user_metadata?.name || creator?.displayName || 'Creator';
     completeOnboarding({
-      creator: { displayName: 'Alex Chen', channelName: 'The Long Signal' },
+      creator: {
+        displayName: finalName,
+        channelName: 'My YouTube Channel',
+        handle: `@${finalName.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'creator'}`,
+      },
       voice: {},
       mode: 'copilot',
     });
     localStorage.removeItem(STORAGE_KEY);
-    showToast('Skipped onboarding — demo workspace ready.', 'info');
+    showToast('Onboarding complete — welcome to your workspace.', 'info');
     navigate('/app');
   };
 
   return (
-    <main className="min-h-screen ghost-aurora text-[#f4f6fb] flex flex-col justify-between selection:bg-[#4de1dc]/30 selection:text-white">
+    <main className="min-h-screen ghost-aurora text-[#f4f6fb] flex flex-col justify-between selection:bg-[#0200F1]/30 selection:text-white">
       {/* Top Header & Progress Indicator */}
       <header className="px-6 py-5 border-b border-white/5 bg-[#0a0d14]/70 backdrop-blur-md">
         <div className="mx-auto max-w-4xl flex items-center justify-between">
@@ -119,7 +163,7 @@ export default function Onboarding() {
             </span>
             <div className="w-24 sm:w-36 h-1.5 rounded-full bg-white/10 overflow-hidden">
               <div
-                className="h-full bg-[#4de1dc] transition-all duration-300 rounded-full"
+                className="h-full bg-[#0200F1] transition-all duration-300 rounded-full"
                 style={{ width: `${(step / 4) * 100}%` }}
               />
             </div>
@@ -136,8 +180,8 @@ export default function Onboarding() {
 
       {/* Main Multi-Step Container */}
       <div className="flex-1 flex items-center justify-center p-4 sm:p-8">
-        <div className="w-full max-w-2xl ghost-panel ghost-glow p-6 sm:p-10 border-[#4de1dc]/30 bg-gradient-to-br from-[#121929]/95 via-[#131726]/95 to-[#1c1830]/95 shadow-2xl relative animate-in fade-in duration-300">
-          {/* STEP 1: WELCOME (5 SECONDS) */}
+        <div className="w-full max-w-2xl ghost-panel ghost-glow p-6 sm:p-10 border-white/10 bg-gradient-to-br from-[#0a0a0a] via-[#050505] to-[#000000] shadow-2xl relative animate-in fade-in duration-300">
+          {/* STEP 1: WELCOME */}
           {step === 1 && (
             <div className="space-y-6">
               <div className="space-y-2">
@@ -148,77 +192,102 @@ export default function Onboarding() {
                   Welcome to Ghost Guardian
                 </h1>
                 <p className="text-sm sm:text-base text-[#8f97b0] leading-relaxed">
-                  Let's get you protected in the next 60 seconds.
+                  Let's get your authentic creator voice and community protection configured.
                 </p>
               </div>
 
-              {/* 3-Step Overview Card */}
-              <div className="p-6 rounded-2xl bg-[#0b0e17]/80 border border-white/10 space-y-4 font-sans">
+              {/* Creator Identity Quick Capture */}
+              <div className="p-6 rounded-2xl bg-[#050505] border border-white/10 space-y-4 font-sans">
                 <span className="text-xs font-bold uppercase tracking-wider text-[#8f97b0]">
-                  Ghost Guardian will:
+                  Your Creator Identity
+                </span>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#8f97b0] block mb-1">
+                      Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                      placeholder="e.g. Nathan Michel"
+                      className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] font-bold uppercase tracking-wider text-[#8f97b0] block mb-1">
+                      Channel / Podcast Name
+                    </label>
+                    <input
+                      type="text"
+                      value={channelName}
+                      onChange={(e) => setChannelName(e.target.value)}
+                      placeholder="e.g. My Channel"
+                      className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 3-Step Overview Card */}
+              <div className="p-6 rounded-2xl bg-[#050505] border border-white/10 space-y-4 font-sans">
+                <span className="text-xs font-bold uppercase tracking-wider text-[#8f97b0]">
+                  How Ghost Guardian Works:
                 </span>
 
                 <div className="space-y-3.5">
                   <div className="flex items-center gap-3.5">
-                    <div className="size-7 rounded-lg bg-[#4de1dc]/15 text-[#4de1dc] font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="size-7 rounded-lg bg-[#0200F1]/20 text-[#0200F1] font-bold text-xs flex items-center justify-center shrink-0">
                       1
                     </div>
                     <div className="text-xs sm:text-sm">
-                      <strong className="text-white">Learn your voice</strong>
-                      <span className="text-[#8f97b0]"> (30 seconds)</span>
+                      <strong className="text-white">Learn your authentic voice</strong>
+                      <span className="text-[#8f97b0]"> — calibrates drafts so AI sounds like you</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3.5">
-                    <div className="size-7 rounded-lg bg-[#fbbf24]/15 text-[#fbbf24] font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="size-7 rounded-lg bg-[#00FF66]/20 text-[#00FF66] font-bold text-xs flex items-center justify-center shrink-0">
                       2
                     </div>
                     <div className="text-xs sm:text-sm">
-                      <strong className="text-white">Connect to your platform</strong>
-                      <span className="text-[#8f97b0]"> (20 seconds)</span>
+                      <strong className="text-white">Verify platform connection</strong>
+                      <span className="text-[#8f97b0]"> — public YouTube comment access ready</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3.5">
-                    <div className="size-7 rounded-lg bg-[#34d399]/15 text-[#34d399] font-bold text-xs flex items-center justify-center shrink-0">
+                    <div className="size-7 rounded-lg bg-[#FF007A]/20 text-[#FF007A] font-bold text-xs flex items-center justify-center shrink-0">
                       3
                     </div>
                     <div className="text-xs sm:text-sm">
-                      <strong className="text-white">Show you your first AI-drafted response</strong>
-                      <span className="text-[#8f97b0]"> (10 seconds)</span>
+                      <strong className="text-white">Paste your first video URL</strong>
+                      <span className="text-[#8f97b0]"> — ingest real comments into your inbox</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              <div className="pt-2 flex items-center gap-3">
                 <Button
                   size="lg"
                   onClick={handleNext}
-                  className="w-full sm:w-auto gap-2 justify-center shadow-[0_0_20px_rgba(77,225,220,0.3)]"
+                  className="w-full sm:w-auto gap-2 justify-center"
                 >
-                  <span>Let's Go</span>
+                  <span>Let's Begin</span>
                   <ArrowRight size={16} />
                 </Button>
-
-                <button
-                  type="button"
-                  onClick={() => setShowDemoVideo(true)}
-                  className="w-full sm:w-auto px-4 py-3 rounded-xl border border-white/10 bg-[#1e2235]/60 hover:bg-[#1e2235] text-xs font-semibold text-[#8f97b0] hover:text-white transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Play size={14} className="text-[#4de1dc]" /> Watch 30-second demo video
-                </button>
               </div>
             </div>
           )}
 
-          {/* STEP 2: VOICE CALIBRATION (30 SECONDS) */}
+          {/* STEP 2: VOICE CALIBRATION */}
           {step === 2 && (
             <div className="space-y-6">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#4de1dc]">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0200F1]">
                     Step 2 of 4 · Voice Calibration
                   </span>
                   <span className="text-xs text-[#8f97b0]">~30 seconds</span>
@@ -227,7 +296,7 @@ export default function Onboarding() {
                   Help Ghost Guardian learn your voice
                 </h1>
                 <p className="text-xs sm:text-sm text-[#8f97b0]">
-                  Paste 3–5 examples of how you actually talk. We'll do the rest.
+                  Provide a few sample replies representing how you talk with your audience.
                 </p>
               </div>
 
@@ -241,8 +310,8 @@ export default function Onboarding() {
                     rows={2}
                     value={examples.ex1}
                     onChange={(e) => setExamples({ ...examples, ex1: e.target.value })}
-                    placeholder="A reply you wrote that sounds like you"
-                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#4de1dc] focus:outline-none leading-relaxed resize-none"
+                    placeholder="A reply showing your natural conversational voice"
+                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none leading-relaxed resize-none"
                   />
                 </div>
 
@@ -254,8 +323,8 @@ export default function Onboarding() {
                     rows={2}
                     value={examples.ex2}
                     onChange={(e) => setExamples({ ...examples, ex2: e.target.value })}
-                    placeholder="Another reply showing how you handle questions or feedback"
-                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#4de1dc] focus:outline-none leading-relaxed resize-none"
+                    placeholder="How you handle questions or constructive critique"
+                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none leading-relaxed resize-none"
                   />
                 </div>
 
@@ -267,28 +336,15 @@ export default function Onboarding() {
                     rows={2}
                     value={examples.ex3}
                     onChange={(e) => setExamples({ ...examples, ex3: e.target.value })}
-                    placeholder="A quick sign-off or how you greet a regular viewer"
-                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#4de1dc] focus:outline-none leading-relaxed resize-none"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#8f97b0] block mb-1">
-                    Example 4 <span className="text-white/40">(Optional)</span>
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={examples.ex4}
-                    onChange={(e) => setExamples({ ...examples, ex4: e.target.value })}
-                    placeholder="Optional: A humorous reply or boundary statement"
-                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#4de1dc] focus:outline-none leading-relaxed resize-none"
+                    placeholder="How you respond to disagreement or welcome a returning viewer"
+                    className="w-full rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none leading-relaxed resize-none"
                   />
                 </div>
               </div>
 
               {/* Helper Text */}
-              <div className="p-3.5 rounded-xl bg-[#0d0f17]/60 border border-white/5 text-xs text-[#8f97b0] leading-relaxed">
-                💡 <strong className="text-white">Don't overthink it.</strong> Even short replies help. Ghost Guardian learns your vocabulary, sentence length, and tone.
+              <div className="p-3.5 rounded-xl bg-[#050505] border border-white/10 text-xs text-[#8f97b0] leading-relaxed">
+                💡 <strong className="text-white">Don't overthink it.</strong> Ghost Guardian uses these to calibrate warmth, directness, and phrasing so responses never sound corporate.
               </div>
 
               {/* CTAs */}
@@ -309,12 +365,12 @@ export default function Onboarding() {
             </div>
           )}
 
-          {/* STEP 3: PLATFORM CONNECTION (20 SECONDS) */}
+          {/* STEP 3: PLATFORM CONNECTION */}
           {step === 3 && (
             <div className="space-y-6">
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold uppercase tracking-wider text-[#4de1dc]">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#0200F1]">
                     Step 3 of 4 · Platform Connection
                   </span>
                   <span className="text-xs text-[#8f97b0]">~20 seconds</span>
@@ -323,75 +379,58 @@ export default function Onboarding() {
                   Connect your platform
                 </h1>
                 <p className="text-xs sm:text-sm text-[#8f97b0]">
-                  Ghost Guardian works with YouTube now. More platforms coming soon.
+                  Ghost Guardian connects with YouTube to protect your attention and draft replies.
                 </p>
               </div>
 
               {/* Connection Cards */}
               <div className="space-y-3">
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlatform('youtube')}
-                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                    selectedPlatform === 'youtube'
-                      ? 'border-[#4de1dc] bg-[#4de1dc]/10 shadow-[0_0_20px_rgba(77,225,220,0.15)]'
-                      : 'border-white/10 bg-[#0d0f17] hover:border-white/20'
-                  }`}
+                <div
+                  className="w-full p-4 rounded-2xl border border-[#0200F1] bg-[#0200F1]/10 shadow-[0_0_20px_rgba(2,0,241,0.15)] text-left flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="size-11 rounded-xl bg-[#ff0000]/15 text-[#ff4444] flex items-center justify-center shrink-0">
+                    <div className="size-11 rounded-xl bg-[#FF1400]/15 text-[#FF1400] flex items-center justify-center shrink-0 border border-[#FF1400]/30">
                       <Video size={22} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h4 className="font-display text-sm font-bold text-white">YouTube</h4>
-                        <Chip variant="positive" className="text-[10px]">Recommended</Chip>
+                        <h4 className="font-display text-sm font-bold text-white">YouTube Public Access</h4>
+                        <Chip variant="positive" className="text-[10px]">Active</Chip>
                       </div>
                       <p className="text-xs text-[#8f97b0] mt-0.5">
-                        One-click Google OAuth synchronization
+                        Import comments from any public video instantly using video URLs.
                       </p>
                     </div>
                   </div>
 
-                  <div className={`size-5 rounded-full border flex items-center justify-center ${
-                    selectedPlatform === 'youtube' ? 'border-[#4de1dc] bg-[#4de1dc] text-black' : 'border-white/20'
-                  }`}>
-                    {selectedPlatform === 'youtube' && <CheckCircle2 size={14} />}
+                  <div className="size-5 rounded-full border border-[#00FF66] bg-[#00FF66] text-black flex items-center justify-center">
+                    <CheckCircle2 size={14} />
                   </div>
-                </button>
+                </div>
 
-                <button
-                  type="button"
-                  onClick={() => setSelectedPlatform('demo')}
-                  className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer ${
-                    selectedPlatform === 'demo'
-                      ? 'border-[#4de1dc] bg-[#4de1dc]/10 shadow-[0_0_20px_rgba(77,225,220,0.15)]'
-                      : 'border-white/10 bg-[#0d0f17] hover:border-white/20'
-                  }`}
+                <div
+                  className="w-full p-4 rounded-2xl border border-white/10 bg-[#050505] text-left flex items-center justify-between opacity-80"
                 >
                   <div className="flex items-center gap-3.5">
-                    <div className="size-11 rounded-xl bg-[#1e2235] text-[#4de1dc] flex items-center justify-center shrink-0">
+                    <div className="size-11 rounded-xl bg-[#1e2235] text-[#8f97b0] flex items-center justify-center shrink-0">
                       <GhostMark className="size-5" />
                     </div>
                     <div>
-                      <h4 className="font-display text-sm font-bold text-white">Skip for now</h4>
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-display text-sm font-bold text-white">Channel OAuth Connection</h4>
+                        <Chip variant="outline" className="text-[10px] text-[#8f97b0]">Coming Soon</Chip>
+                      </div>
                       <p className="text-xs text-[#8f97b0] mt-0.5">
-                        Use simulated demo fixture mode with pre-loaded comments
+                        Direct automated publishing via channel OAuth will be available with the publish release.
                       </p>
                     </div>
                   </div>
-
-                  <div className={`size-5 rounded-full border flex items-center justify-center ${
-                    selectedPlatform === 'demo' ? 'border-[#4de1dc] bg-[#4de1dc] text-black' : 'border-white/20'
-                  }`}>
-                    {selectedPlatform === 'demo' && <CheckCircle2 size={14} />}
-                  </div>
-                </button>
+                </div>
               </div>
 
               {/* Helper note */}
               <p className="text-xs text-[#8f97b0]">
-                You can connect more platforms later in Settings (Instagram, TikTok, X coming soon).
+                In the next step, you can paste any public video URL to import comments immediately.
               </p>
 
               {/* Actions */}
@@ -401,210 +440,126 @@ export default function Onboarding() {
                   onClick={() => handleSkipToStep(4)}
                   className="text-xs text-[#8f97b0] hover:text-white underline cursor-pointer"
                 >
-                  Skip to Demo Mode
+                  Skip to Next Step
                 </button>
 
                 <Button
                   size="lg"
-                  onClick={() => {
-                    if (selectedPlatform === 'youtube') {
-                      setIsConnecting(true);
-                      setTimeout(() => {
-                        setIsConnecting(false);
-                        handleNext();
-                      }, 600);
-                    } else {
-                      handleNext();
-                    }
-                  }}
+                  onClick={handleNext}
                   className="w-full sm:w-auto gap-2 justify-center"
                 >
-                  {isConnecting ? (
-                    <span>Connecting...</span>
-                  ) : (
-                    <>
-                      <span>{selectedPlatform === 'youtube' ? 'Connect YouTube' : 'Continue to Demo'}</span>
-                      <ArrowRight size={16} />
-                    </>
-                  )}
+                  <span>Continue to First Video</span>
+                  <ArrowRight size={16} />
                 </Button>
               </div>
             </div>
           )}
 
-          {/* STEP 4: THE WOW MOMENT (10 SECONDS) */}
+          {/* STEP 4: REAL FIRST VIDEO IMPORT */}
           {step === 4 && (
             <div className="space-y-6">
-              <div className="space-y-2 text-center sm:text-left">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#34d399]/15 text-[#34d399] text-xs font-bold">
-                  <ShieldCheck size={14} /> Step 4 of 4 · Shield Active
+              <div className="space-y-2">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#00FF66]/15 text-[#00FF66] text-xs font-bold">
+                  <ShieldCheck size={14} /> Step 4 of 4 · First Video Import
                 </div>
                 <h1 className="font-display text-3xl sm:text-4xl text-white font-bold tracking-tight">
-                  You're protected
+                  Paste your first video URL
                 </h1>
-                <p className="text-sm sm:text-base text-[#8f97b0] leading-relaxed">
-                  Here's what Ghost Guardian just did for you:
+                <p className="text-sm text-[#8f97b0] leading-relaxed">
+                  Enter a YouTube video URL or ID to pull in your comments and preview your first AI-drafted responses.
                 </p>
               </div>
 
-              {/* Real-time Stats Card */}
-              <div className="p-6 rounded-2xl bg-[#0b0e17]/90 border border-[#4de1dc]/30 space-y-5">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center sm:text-left">
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-white block">47</span>
-                    <span className="text-[11px] text-[#8f97b0]">comments analyzed</span>
+              {/* Video URL Input Card */}
+              <div className="p-6 rounded-2xl bg-[#050505] border border-white/10 space-y-4 font-sans">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-[#8f97b0] block mb-1.5">
+                    YouTube Video URL or Video ID
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={videoUrl}
+                      onChange={(e) => {
+                        setVideoUrl(e.target.value);
+                        setImportError('');
+                      }}
+                      placeholder="https://www.youtube.com/watch?v=... or 11-char ID"
+                      className="flex-1 rounded-xl border border-white/10 bg-[#0d0f17] p-3 text-xs text-white focus:border-[#0200F1] focus:outline-none font-mono"
+                    />
                   </div>
-
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-[#34d399] block">12</span>
-                    <span className="text-[11px] text-[#8f97b0]">spam filtered</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-[#4de1dc] block">8</span>
-                    <span className="text-[11px] text-[#8f97b0]">routine replies drafted</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-[#818cf8] block">3</span>
-                    <span className="text-[11px] text-[#8f97b0]">questions answered</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-[#c084fc] block">2</span>
-                    <span className="text-[11px] text-[#8f97b0]">human moments flagged</span>
-                  </div>
-
-                  <div className="p-3 rounded-xl bg-[#141829] border border-white/5">
-                    <span className="text-2xl font-display font-bold text-[#34d399] block">0</span>
-                    <span className="text-[11px] text-[#8f97b0]">threats auto-answered</span>
-                  </div>
-                </div>
-
-                <div className="pt-3 border-t border-white/10 flex items-center justify-between text-xs">
-                  <span className="text-[#8f97b0]">Protected attention value:</span>
-                  <span className="text-sm font-display font-bold text-[#34d399]">
-                    ~2.5 hours saved this week
-                  </span>
-                </div>
-              </div>
-
-              {/* Here's What You'll See First */}
-              <div className="p-5 sm:p-6 rounded-2xl bg-[#0b0e17]/90 border border-white/10 space-y-4">
-                <div className="space-y-1">
-                  <span className="text-[11px] font-mono font-bold tracking-widest text-[#4de1dc] uppercase block">
-                    Orientation Briefing
-                  </span>
-                  <h3 className="font-display text-lg text-white font-bold">
-                    Here's what you'll see first
-                  </h3>
-                  <p className="text-xs text-[#8f97b0]">
-                    Ghost Guardian organizes your attention across three core command surfaces:
+                  {importError && (
+                    <p className="text-xs text-[#FF1400] mt-1.5 font-medium">
+                      {importError}
+                    </p>
+                  )}
+                  <p className="text-[11px] text-[#8f97b0] mt-1.5">
+                    Paste any public video link to test Ghost Guardian's classification, human moment detection, and voice drafting.
                   </p>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
-                    <span className="text-xs font-display font-bold text-white uppercase tracking-wider block">
-                      1. The Dashboard
-                    </span>
-                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
-                      Your high-level briefing: see protected attention hours, urgent needs, and community pulse at a glance.
-                    </p>
+              {/* What Happens When You Import */}
+              <div className="p-5 sm:p-6 rounded-2xl bg-[#050505] border border-white/10 space-y-3">
+                <span className="text-[11px] font-mono font-bold tracking-widest text-[#0200F1] uppercase block">
+                  How Ghost Guardian Triages
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-[#0d0f17] border border-white/5 space-y-1">
+                    <strong className="text-white block font-display">1. Needs You Lane</strong>
+                    <p className="text-[#8f97b0] text-[11px]">Surfaces questions, constructive debate, and comments needing your voice.</p>
                   </div>
-
-                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
-                    <span className="text-xs font-display font-bold text-[#4de1dc] uppercase tracking-wider block">
-                      2. The Inbox
-                    </span>
-                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
-                      Your triage center: review human moments, inspect flagged comments, and approve or edit voice-matched replies.
-                    </p>
+                  <div className="p-3 rounded-xl bg-[#0d0f17] border border-white/5 space-y-1">
+                    <strong className="text-[#FF007A] block font-display">2. Human Moments</strong>
+                    <p className="text-[#8f97b0] text-[11px]">Isolates deep disclosures and gratitude for direct personal handling.</p>
                   </div>
-
-                  <div className="p-3.5 rounded-xl bg-[#141829] border border-white/5 space-y-1.5">
-                    <span className="text-xs font-display font-bold text-[#c084fc] uppercase tracking-wider block">
-                      3. The Voice Panel
-                    </span>
-                    <p className="text-[11px] text-[#8f97b0] leading-relaxed">
-                      Your tone calibrator: fine-tune warmth, directness, and humor parameters, and manage approved knowledge topics.
-                    </p>
+                  <div className="p-3 rounded-xl bg-[#0d0f17] border border-white/5 space-y-1">
+                    <strong className="text-[#7A00FF] block font-display">3. Shield Vault</strong>
+                    <p className="text-[#8f97b0] text-[11px]">Silences spam and conceals hostile trolling without cognitive drain.</p>
                   </div>
                 </div>
               </div>
 
-              {/* Final CTA */}
-              <div className="pt-2">
+              {/* Final CTAs */}
+              <div className="pt-2 space-y-3">
                 <Button
                   size="lg"
-                  onClick={handleFinish}
-                  className="w-full gap-2 justify-center shadow-[0_0_30px_rgba(77,225,220,0.35)] py-4 text-base"
+                  onClick={() => handleFinish(false)}
+                  disabled={isImporting}
+                  className="w-full gap-2 justify-center py-4 text-base"
                 >
-                  <MessageSquare size={18} />
-                  <span>Open Your Inbox</span>
-                  <ArrowRight size={18} />
+                  {isImporting ? (
+                    <>
+                      <Loader2 size={18} className="animate-spin" />
+                      <span>Importing Comments...</span>
+                    </>
+                  ) : (
+                    <>
+                      <MessageSquare size={18} />
+                      <span>{videoUrl.trim() ? 'Import & Open Inbox' : 'Open Inbox'}</span>
+                      <ArrowRight size={18} />
+                    </>
+                  )}
                 </Button>
-                <p className="text-[11px] text-center text-[#8f97b0] mt-2">
-                  Nothing will be posted without your explicit approval in Copilot mode.
-                </p>
+
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => handleFinish(true)}
+                    className="text-xs text-[#8f97b0] hover:text-white underline cursor-pointer"
+                  >
+                    Skip video import for now and open empty inbox
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* 30-Second Demo Video Modal */}
-      {showDemoVideo && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-150">
-          <div className="w-full max-w-xl rounded-2xl border border-white/15 bg-[#121625] p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between pb-3 border-b border-white/10">
-              <div className="flex items-center gap-2">
-                <Play size={16} className="text-[#4de1dc]" />
-                <h3 className="font-display text-sm text-white font-bold">Ghost Guardian in 30 Seconds</h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setShowDemoVideo(false)}
-                className="p-1 rounded text-[#8f97b0] hover:text-white cursor-pointer"
-              >
-                <X size={16} />
-              </button>
-            </div>
-
-            {/* Simulated Animated Video Player */}
-            <div className="aspect-video rounded-xl bg-[#0a0d14] border border-white/10 p-6 flex flex-col items-center justify-center text-center space-y-3 relative overflow-hidden">
-              <div className="size-14 rounded-full bg-[#4de1dc]/20 text-[#4de1dc] flex items-center justify-center animate-pulse">
-                <ShieldCheck size={28} />
-              </div>
-              <div className="space-y-1 z-10">
-                <h4 className="font-display text-base text-white font-bold">Autonomous Comment Protection</h4>
-                <p className="text-xs text-[#8f97b0] max-w-xs">
-                  See how Ghost Guardian analyzes, classifies, and drafts in your voice in real time.
-                </p>
-              </div>
-              <span className="text-[10px] uppercase font-mono tracking-wider text-[#4de1dc]">
-                ● Live Demo Ready
-              </span>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button
-                size="sm"
-                onClick={() => {
-                  setShowDemoVideo(false);
-                  handleNext();
-                }}
-              >
-                Got It, Let's Go →
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Footer */}
       <footer className="px-6 py-4 border-t border-white/5 text-center text-xs text-[#8f97b0]">
-        Ghost Guardian Onboarding · Free 14-day trial · No credit card required
+        Founding beta · Copilot mode · Nothing posts without your approval
       </footer>
     </main>
   );

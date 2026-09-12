@@ -31,6 +31,9 @@ function createEmptyProductionWorkspace() {
     contentOpportunities: [],
     communityHealth: {},
     weeklyDigest: {},
+    sentimentTrend: [],
+    questionClusters: [],
+    topics: [],
   };
 }
 
@@ -82,10 +85,15 @@ function reducer(state, action) {
       return { ...state, settings: { ...state.settings, ...action.payload } };
     case 'UPDATE_VOICE':
       return { ...state, voice: { ...state.voice, ...action.payload } };
+    case 'UPDATE_CREATOR':
+      return {
+        ...state,
+        creator: { ...state.creator, ...action.payload, updatedAt: new Date().toISOString() },
+      };
     case 'COMPLETE_ONBOARDING':
       return {
         ...state,
-        creator: { ...state.creator, ...action.payload.creator, isFixture: true },
+        creator: { ...state.creator, ...action.payload.creator, isFixture: false },
         voice: { ...state.voice, ...action.payload.voice },
         settings: { ...state.settings, mode: action.payload.mode },
       };
@@ -484,6 +492,7 @@ export function ApplicationProvider({ children }) {
     register,
     signOut,
     updateSettings: (updates) => dispatch({ type: 'UPDATE_SETTINGS', payload: updates }),
+    updateCreator: (updates) => dispatch({ type: 'UPDATE_CREATOR', payload: updates }),
     updateVoice: (updates) => dispatch({ type: 'UPDATE_VOICE', payload: updates }),
     completeOnboarding: (payload) => dispatch({ type: 'COMPLETE_ONBOARDING', payload }),
     addKnowledge: (item) => dispatch({ type: 'ADD_KNOWLEDGE', payload: item }),

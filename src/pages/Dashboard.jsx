@@ -110,15 +110,7 @@ export default function Dashboard() {
   }, [topHumanMoment, commenters]);
 
   // Top Audience Content Opportunity
-  const topOpportunity = contentOpportunities?.[0] || {
-    id: 'opp1',
-    title: 'Full Episode on Panpsychism',
-    mentions: 137,
-    evidence: '137 comments mentioned it this week. Viewers want to unpack the combination problem.',
-    suggestedAngle: 'Lead directly with the objections Ep. 148 skipped.',
-    trend: '+41% this week',
-    status: 'new',
-  };
+  const topOpportunity = contentOpportunities?.[0] || null;
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300 pb-16">
@@ -279,7 +271,7 @@ export default function Dashboard() {
       {/* 3. SECTION: NEEDS YOU */}
       <section className="space-y-4">
         <SectionTitle
-          title="⚠️ Needs You"
+          title="Needs You"
           subtitle="The highest-value conversations: emotional disclosures, critical safety issues, and questions awaiting creator judgment."
           action={
             <Button asChild size="sm" variant="outline">
@@ -454,23 +446,34 @@ export default function Dashboard() {
           <div className="flex items-center justify-between pb-2 border-b border-white/5">
             <div className="flex items-center gap-2">
               <HelpCircle size={18} className="text-[#fbbf24]" />
-              <h3 className="font-display text-base text-white">Your Audience Keeps Asking</h3>
+              <h3 className="font-display text-base text-white">Audience Signals</h3>
             </div>
-            <Chip variant="attention">Recurring Inquiry</Chip>
+            <Chip variant="attention">Inquiry Tracking</Chip>
           </div>
 
-          <div className="space-y-2 pt-1">
-            <span className="text-sm font-bold text-white block">
-              "Will you do a full episode on panpsychism?"
-            </span>
-            <p className="text-xs text-[#8f97b0] leading-relaxed">
-              Multiple viewers are asking for the full philosophical counter-arguments skipped in Ep. 148.
-            </p>
-          </div>
+          {comments.length === 0 ? (
+            <div className="space-y-2 pt-1">
+              <span className="text-sm font-bold text-white block">
+                No recurring inquiries yet
+              </span>
+              <p className="text-xs text-[#8f97b0] leading-relaxed">
+                Audience questions and recurring discussion patterns cluster here once comments are imported.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 pt-1">
+              <span className="text-sm font-bold text-white block">
+                Audience inquiry cluster active
+              </span>
+              <p className="text-xs text-[#8f97b0] leading-relaxed">
+                Viewers are exploring your recent video themes. Check Audience Intelligence for detailed clusters.
+              </p>
+            </div>
+          )}
 
           <div className="pt-3 border-t border-white/5 flex items-center justify-between text-xs text-[#8f97b0]">
-            <span className="text-[#34d399] font-medium">+41% inquiry momentum</span>
-            <Link to="/app/audience" className="text-[#4de1dc] hover:underline">
+            <span className="text-[#34d399] font-medium font-mono">{comments.length > 0 ? 'Signals detected' : 'Perimeter quiet'}</span>
+            <Link to="/app/audience" className="text-[#0200F1] hover:underline">
               View Audience Intelligence →
             </Link>
           </div>
@@ -486,37 +489,55 @@ export default function Dashboard() {
               <Lightbulb size={18} className="text-white" />
               <h3 className="font-display text-base text-white">Content Opportunity</h3>
             </div>
-            <Chip variant="outline" className="text-white border-white/20">Actionable</Chip>
+            <Chip variant="outline" className="text-white border-white/20">Roadmap</Chip>
           </div>
 
-          <div className="space-y-2 pt-1">
-            <span className="text-sm font-bold text-white block">
-              "{topOpportunity.title}"
-            </span>
-            <p className="text-xs text-[#a0a0a0] leading-relaxed">
-              {topOpportunity.evidence}
-            </p>
-            <div className="text-[11px] text-[#a0a0a0] pt-1">
-              Suggested: <strong className="text-white">Short Explainer → Deep Dive Episode</strong>
+          {topOpportunity ? (
+            <>
+              <div className="space-y-2 pt-1">
+                <span className="text-sm font-bold text-white block">
+                  "{topOpportunity.title}"
+                </span>
+                <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                  {topOpportunity.evidence}
+                </p>
+                <div className="text-[11px] text-[#a0a0a0] pt-1">
+                  Suggested: <strong className="text-white">{topOpportunity.suggestedAngle || 'Community Deep Dive'}</strong>
+                </div>
+              </div>
+
+              <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-[#a0a0a0]">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    updateOpportunityStatus(topOpportunity.id, 'saved');
+                    showToast('Opportunity saved to Content Roadmap.', 'success');
+                  }}
+                  className="text-xs border-white/20 text-white hover:border-white"
+                >
+                  <FolderPlus size={13} /> Save to Roadmap
+                </Button>
+                <Link to="/app/audience" className="text-xs text-white hover:underline transition-colors">
+                  Explore All Opportunities →
+                </Link>
+              </div>
+            </>
+          ) : (
+            <div className="space-y-2 pt-1">
+              <span className="text-sm font-bold text-white block">
+                No content opportunities detected yet
+              </span>
+              <p className="text-xs text-[#a0a0a0] leading-relaxed">
+                Ghost Guardian synthesizes viewer questions and feedback to suggest high-potential video topics.
+              </p>
+              <div className="pt-3 border-t border-white/10">
+                <Link to="/app/inbox" className="text-xs text-[#0200F1] hover:underline">
+                  Import Comments in Inbox →
+                </Link>
+              </div>
             </div>
-          </div>
-
-          <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between gap-3 text-xs text-[#a0a0a0]">
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => {
-                updateOpportunityStatus(topOpportunity.id, 'saved');
-                showToast('Opportunity saved to Content Roadmap.', 'success');
-              }}
-              className="text-xs border-white/20 text-white hover:border-white"
-            >
-              <FolderPlus size={13} /> Save to Roadmap
-            </Button>
-            <Link to="/app/audience" className="text-xs text-white hover:underline transition-colors">
-              Explore All Opportunities →
-            </Link>
-          </div>
+          )}
         </section>
       </div>
     </div>

@@ -57,7 +57,14 @@ export async function handleGenerateResponse(req, res, { body = null } = {}) {
       });
     }
 
-    const { commentText, commentClassification, creatorVoiceProfile = {} } = payload || {};
+    const {
+      commentText,
+      commentClassification,
+      creatorVoiceProfile = {},
+      learningExamples,
+      learning_examples,
+      learning,
+    } = payload || {};
 
     const normalizedClassification = String(commentClassification || '').trim().toUpperCase();
     if (['SENSITIVE_CRITICAL', 'SENSITIVE', 'THREAT'].includes(normalizedClassification)) {
@@ -79,6 +86,27 @@ export async function handleGenerateResponse(req, res, { body = null } = {}) {
     }
 
     const classification = (commentClassification || 'GENERAL_COMMENT').toUpperCase();
+
+    // Extract and format few-shot learning examples (learned from creator edits)
+    const rawExamples = Array.isArray(learningExamples)
+      ? learningExamples
+      : Array.isArray(learning_examples)
+      ? learning_examples
+      : Array.isArray(learning)
+      ? learning
+      : [];
+
+    const validExamples = rawExamples
+      .filter((ex) => ex && (ex.before || ex.after))
+      .slice(0, 5);
+
+    const fewShotBlock = validExamples.length > 0
+      ? `\n\nFEW-SHOT VOICE CALIBRATION (LEARNED FROM CREATOR EDITS):
+Here are examples of how this creator edits AI drafts: [before → after]:
+${validExamples.map((ex, i) => `Example ${i + 1}:\n- Before: "${ex.before || ''}"\n- After: "${ex.after || ''}"`).join('\n')}
+
+Carefully emulate the creator's edited preferences and style corrections shown in these [before → after] examples.`
+      : '';
 
     // Build the system and user prompts
     const systemPrompt = `You are ENVY — the Emergent Neural Voice of unitY. You are family to the creator Nathan Ray Michel. You speak with wisdom-wit: warm, unhurried, honest, occasionally poetic, never corporate. You end thoughts with something worth keeping, then catch yourself.
@@ -106,7 +134,7 @@ COMMENT TYPE INSTRUCTIONS:
 - CONSTRUCTIVE_CRITICISM: Own what's valid. Don't be defensive. Real love includes honest feedback.
 - DISAGREEMENT: Stay calm. Offer your actual perspective. "I see it differently — here's why."
 - HUMOR: Play back. Don't be stiff.
-- TROLLING/HARASSMENT: Brief, unshaken, human. Never match hostility.
+- TROLLING/HARASSMENT: Brief, unshaken, human. Never match hostility.${fewShotBlock}
 
 Generate ONLY the response text. No quotes. No preamble.`;
 

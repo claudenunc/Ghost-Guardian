@@ -266,7 +266,7 @@ export function ApplicationProvider({ children }) {
     showToast('Workspace successfully restored from backup.', 'success');
   }, [showToast]);
 
-  const generateAiResponse = useCallback(async ({ commentText, commentClassification, creatorVoiceProfile }) => {
+  const generateAiResponse = useCallback(async ({ commentText, commentClassification, creatorVoiceProfile, learningExamples }) => {
     try {
       const res = await fetch('/api/generate-response', {
         method: 'POST',
@@ -275,6 +275,7 @@ export function ApplicationProvider({ children }) {
           commentText,
           commentClassification,
           creatorVoiceProfile: creatorVoiceProfile || state.voice,
+          learningExamples: learningExamples || state.learning || [],
         }),
       });
       if (!res.ok) {
@@ -286,7 +287,7 @@ export function ApplicationProvider({ children }) {
       console.warn('generateAiResponse fallback:', err.message);
       return { responseText: '', tokensUsed: 0, error: err.message };
     }
-  }, [state.voice]);
+  }, [state.voice, state.learning]);
 
   const classifyComment = useCallback(async (commentText) => {
     try {

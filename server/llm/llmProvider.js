@@ -22,7 +22,7 @@ export class LlmGuardianProvider {
   /**
    * Evaluates a comment through the hybrid Guardian intelligence pipeline.
    */
-  async processComment({ comment, voiceProfile, policy, approvedKnowledge = [] }) {
+  async processComment({ comment, voiceProfile, policy, approvedKnowledge = [], learningExamples = [] }) {
     const text = comment.text || '';
     const activePolicy = policy || defaultGuardianPolicy;
 
@@ -81,6 +81,7 @@ export class LlmGuardianProvider {
         category: ruleMatch.category,
         voiceProfile,
         approvedKnowledge,
+        learningExamples: learningExamples || comment.learningExamples || [],
       });
 
       // STEP 4: DETERMINISTIC POST-GENERATION VALIDATION (Fail-closed guardrail)
@@ -148,8 +149,8 @@ export class LlmGuardianProvider {
   /**
    * Calls the configured LLM API to produce structured analysis and draft.
    */
-  async generateLlmResponse({ commentText, category, voiceProfile = {}, approvedKnowledge = [] }) {
-    const prompt = this.buildPrompt({ commentText, category, voiceProfile, approvedKnowledge });
+  async generateLlmResponse({ commentText, category, voiceProfile = {}, approvedKnowledge = [], learningExamples = [] }) {
+    const prompt = this.buildPrompt({ commentText, category, voiceProfile, approvedKnowledge, learningExamples });
 
     let responseJson = null;
 
@@ -205,8 +206,21 @@ export class LlmGuardianProvider {
     return responseJson;
   }
 
-  buildPrompt({ commentText, category, voiceProfile, approvedKnowledge }) {
+  buildPrompt({ commentText, category, voiceProfile, approvedKnowledge, learningExamples = [] }) {
     const knowledgeSummary = approvedKnowledge.map((k) => `- ${k.topic}: ${k.content}`).join('\n');
+    const rawExamples = Array.isArray(learningExamples) ? learningExamples : [];
+    const validExamples = rawExamples
+      .filter((ex) => ex && (ex.before || ex.after))
+      .slice(0, 5);
+
+    const fewShotBlock = validExamples.length > 0
+      ? `\nFEW-SHOT VOICE CALIBRATION (LEARNED FROM CREATOR EDITS):
+Here are examples of how this creator edits AI drafts: [before → after]:
+${validExamples.map((ex, i) => `Example ${i + 1}:\n- Before: "${ex.before || ''}"\n- After: "${ex.after || ''}"`).join('\n')}
+
+Adopt these exact style shifts, phrasing preferences, and tone corrections.\n`
+      : '';
+
     return `You are ENVY — the Emergent Neural Voice of unitY. You are family to the creator Nathan Ray Michel. You speak with wisdom-wit: warm, unhurried, honest, occasionally poetic, never corporate. You end thoughts with something worth keeping, then catch yourself.
 Your goal is to understand audience comments and produce voice-aligned, concise, grounded draft replies.
 
@@ -217,7 +231,7 @@ CREATOR VOICE GUIDELINES:
 - Humor: ${voiceProfile.humor ?? 40}/100
 - Common Phrases: ${(voiceProfile.commonPhrases || []).join(', ')}
 - Strictly Avoid: ${(voiceProfile.humanApprovalTopics || []).join(', ')}
-
+${fewShotBlock}
 APPROVED CREATOR KNOWLEDGE BASE:
 ${knowledgeSummary || 'None provided'}
 

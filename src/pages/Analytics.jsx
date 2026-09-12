@@ -146,7 +146,7 @@ export default function Analytics() {
           </div>
 
           <div className="pt-2 border-t border-white/5 flex items-center justify-between text-xs text-[#8f97b0]">
-            <span>Model learns from every approved calibration.</span>
+            <span>Your edits are saved to your Voice Library and improve future drafts.</span>
           </div>
         </section>
 

@@ -184,6 +184,47 @@ describe('Ghost Guardian Server-Side API Endpoints & Security', () => {
       assert.ok(requestBody.messages.some((m) => m.content.includes('Warmth: 85/100')));
     });
 
+    it('injects learning_examples as few-shot [before -> after] examples in the prompt', async () => {
+      process.env.OPENAI_API_KEY = 'sk-test-mock-key';
+
+      let capturedFetchOptions = {};
+      globalThis.fetch = async (url, options) => {
+        capturedFetchOptions = options;
+        return {
+          ok: true,
+          status: 200,
+          json: async () => ({
+            choices: [{ message: { content: 'Calibrated response' } }],
+            usage: { total_tokens: 25 },
+          }),
+        };
+      };
+
+      const learningExamples = [
+        { before: 'Thanks a lot for watching!', after: 'Means the world to me that this resonated.' },
+      ];
+
+      const { req, res } = createMockHttp({
+        method: 'POST',
+        url: '/api/generate-response',
+        body: {
+          commentText: 'Loved the video!',
+          commentClassification: 'PRAISE',
+          learningExamples,
+        },
+      });
+
+      await handleGenerateResponse(req, res);
+      assert.equal(res.statusCode, 200);
+
+      const requestBody = JSON.parse(capturedFetchOptions.body);
+      const systemMessage = requestBody.messages.find((m) => m.role === 'system');
+      assert.ok(systemMessage.content.includes('FEW-SHOT VOICE CALIBRATION (LEARNED FROM CREATOR EDITS)'));
+      assert.ok(systemMessage.content.includes('Here are examples of how this creator edits AI drafts: [before → after]'));
+      assert.ok(systemMessage.content.includes('- Before: "Thanks a lot for watching!"'));
+      assert.ok(systemMessage.content.includes('- After: "Means the world to me that this resonated."'));
+    });
+
     it('handles OpenAI API errors gracefully without exposing keys in error', async () => {
       process.env.OPENAI_API_KEY = 'sk-test-invalid-key';
 

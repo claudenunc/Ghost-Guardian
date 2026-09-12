@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       learningExamples,
       learning_examples,
       learning,
+      tone,
     } = req.body || {};
 
     // Hard block: refuse to generate responses for crisis/threat content
@@ -108,7 +109,11 @@ COMMENT TYPE INSTRUCTIONS:
 
 Generate ONLY the response text. No quotes. No preamble.`;
 
-    const userPrompt = `Comment: "${commentText}"\nClassification: ${classification}\nGenerate appropriate response:`;
+    const register = String(tone || '').trim().toLowerCase();
+    const registerLine = ['calm', 'direct', 'warm', 'humorous'].includes(register)
+      ? `Preferred register: ${register}\n`
+      : '';
+    const userPrompt = `Comment: "${commentText}"\nClassification: ${classification}\n${registerLine}Generate appropriate response:`;
 
     const openAiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',

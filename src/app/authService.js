@@ -1,5 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
 import { ApplicationError, ErrorCode } from './errors.js';
+import { getSupabaseClient } from './supabaseClient.js';
 
 const SESSION_KEY = 'ghost_guardian_demo_session_v1';
 
@@ -11,14 +11,16 @@ function getStorage(storage) {
 
 /**
  * Development-only adapter. Its session is intentionally browser-local and
- * cannot authorize a production account. Replace this adapter with a provider
- * backed ProductionAuthAdapter before enabling the production runtime.
+ * cannot authorize a production account.
  */
 export function createDevelopmentAuthAdapter({ storage } = {}) {
   const sessionStorage = getStorage(storage);
 
   return {
     kind: 'development-demo',
+    whenReady() {
+      return Promise.resolve(this.getSession());
+    },
     getSession() {
       try {
         const value = sessionStorage?.getItem(SESSION_KEY);
@@ -60,12 +62,15 @@ export function createDevelopmentAuthAdapter({ storage } = {}) {
 let productionToken = null;
 
 /**
- * Production authentication adapter backed by the Ghost Guardian Server API.
- * (Legacy — retained for backward compatibility with local server mode.)
+ * Legacy adapter for the local Node server. Retained for local development
+ * and as the fail-closed fallback when Supabase is not configured.
  */
 export function createProductionAuthAdapter({ apiBaseUrl = 'http://localhost:3001' } = {}) {
   return {
     kind: 'production-server',
+    whenReady() {
+      return Promise.resolve(this.getSession());
+    },
     getSession() {
       if (!productionToken) return null;
       return {
@@ -138,44 +143,68 @@ export function createProductionAuthAdapter({ apiBaseUrl = 'http://localhost:300
   };
 }
 
+/** Turns Supabase auth errors into calm, specific sentences a creator can act on. */
+export function friendlyAuthMessage(error, fallback) {
+  const raw = String(error?.message || '').toLowerCase();
+  if (raw.includes('invalid login credentials')) return 'That email and password do not match.';
+  if (raw.includes('email not confirmed')) return 'Confirm your email first. The link is waiting in your inbox.';
+  if (raw.includes('already registered') || raw.includes('already exists')) {
+    return 'An account with this email already exists. Sign in instead.';
+  }
+  if (raw.includes('rate limit') || raw.includes('too many')) return 'Too many attempts. Give it a minute and try again.';
+  if (raw.includes('password') && raw.includes('at least')) return 'Use a password with at least 6 characters.';
+  if (raw.includes('invalid email') || raw.includes('valid email') || raw.includes('unable to validate email')) {
+    return 'That email address does not look right.';
+  }
+  if (raw.includes('network') || raw.includes('failed to fetch')) {
+    return 'We could not reach the sign-in service. Check your connection and try again.';
+  }
+  return fallback;
+}
+
 /**
  * Supabase authentication adapter for production deployments on Vercel.
- * Uses Supabase Auth for sign-in, sign-up, and session management.
  */
 export function createSupabaseAuthAdapter() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const supabase = getSupabaseClient();
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials missing — falling back to unavailable auth.');
+  if (!supabase) {
+    console.warn('Supabase credentials missing. Authentication is unavailable.');
     return createProductionAuthAdapter();
   }
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  // Cached session reference (updated by onAuthStateChange listener in runtime.jsx)
   let cachedSession = null;
-
-  // Eagerly populate cached session from Supabase on creation
-  supabase.auth.getSession().then(({ data }) => {
-    if (data?.session) {
-      cachedSession = data.session;
-    }
+  let resolveReady;
+  const ready = new Promise((resolve) => {
+    resolveReady = resolve;
   });
+
+  supabase.auth
+    .getSession()
+    .then(({ data }) => {
+      cachedSession = data?.session || null;
+      resolveReady(cachedSession);
+    })
+    .catch(() => resolveReady(null));
+
+  const toSession = (session) =>
+    session
+      ? { user: session.user, token: session.access_token, environment: 'production' }
+      : null;
 
   return {
     kind: 'supabase',
 
-    getSession() {
-      if (!cachedSession) return null;
-      return {
-        user: cachedSession.user,
-        token: cachedSession.access_token,
-        environment: 'production',
-      };
+    /** Resolves once Supabase has restored (or ruled out) a saved session. */
+    whenReady() {
+      return ready;
     },
 
-    async signIn({ email, password }) {
+    getSession() {
+      return toSession(cachedSession);
+    },
+
+    async signIn({ email, password } = {}) {
       if (!email || !password) {
         throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Email and password are required.');
       }
@@ -183,18 +212,17 @@ export function createSupabaseAuthAdapter() {
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
       if (error) {
-        throw new ApplicationError(ErrorCode.AUTHENTICATION, error.message || 'Sign in failed.');
+        throw new ApplicationError(
+          ErrorCode.AUTHENTICATION,
+          friendlyAuthMessage(error, 'Sign in did not go through. Try again.')
+        );
       }
 
       cachedSession = data.session;
-      return {
-        user: data.session.user,
-        token: data.session.access_token,
-        environment: 'production',
-      };
+      return toSession(data.session);
     },
 
-    async register({ email, password, name }) {
+    async register({ email, password, name } = {}) {
       if (!email || !password) {
         throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Email and password are required.');
       }
@@ -202,32 +230,30 @@ export function createSupabaseAuthAdapter() {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
-        options: {
-          data: { name },
-        },
+        options: { data: { name } },
       });
 
       if (error) {
-        throw new ApplicationError(ErrorCode.AUTHENTICATION, error.message || 'Registration failed.');
+        throw new ApplicationError(
+          ErrorCode.AUTHENTICATION,
+          friendlyAuthMessage(error, 'We could not create your account. Try again.')
+        );
       }
 
-      // Insert creator record into public.creators table
-      if (data.user) {
-        const { error: insertError } = await supabase.from('creators').insert({
-          user_id: data.user.id,
-          email,
-          plan_tier: 'beta',
-        });
-        if (insertError) {
-          console.warn('Failed to insert creator record:', insertError.message);
-        }
+      // Supabase returns a placeholder user with no identities when the email is already taken.
+      if (data.user && Array.isArray(data.user.identities) && data.user.identities.length === 0) {
+        throw new ApplicationError(
+          ErrorCode.AUTHENTICATION,
+          'An account with this email already exists. Sign in instead.'
+        );
       }
 
-      cachedSession = data.session;
+      cachedSession = data.session || null;
       return {
-        user: data.session?.user || data.user,
+        user: data.session?.user || data.user || null,
         token: data.session?.access_token || null,
         environment: 'production',
+        requiresEmailConfirmation: !data.session,
       };
     },
 
@@ -246,15 +272,15 @@ export function createSupabaseAuthAdapter() {
     requireAuth() {
       const session = this.getSession();
       if (!session) {
-        throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Authentication is required. Please sign in.');
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Sign in to continue.');
       }
       return session;
     },
 
     onAuthStateChange(cb) {
-      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
         cachedSession = session;
-        cb(_event, session);
+        cb(event, session);
       });
       return subscription;
     },

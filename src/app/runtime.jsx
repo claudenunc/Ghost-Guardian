@@ -193,6 +193,9 @@ function reducer(state, action) {
       const freshComments = (newComments || []).filter((c) => !existingIds.has(c.id));
 
       const newStates = { ...(state.commentStates || {}) };
+      const existingCommenters = [...(state.commenters || [])];
+      const commenterMap = new Map(existingCommenters.map((m) => [m.id, { ...m }]));
+
       freshComments.forEach((c) => {
         newStates[c.id] = {
           status: c.recommendedAction === 'silence' || c.recommendedAction === 'hide' ? 'silenced' : 'pending',
@@ -202,6 +205,30 @@ function reducer(state, action) {
           savedAsExample: false,
           regenerations: 0,
         };
+
+        const commenterId = c.commenterId || c.authorHandle || c.author || 'unknown-commenter';
+        c.commenterId = commenterId;
+
+        if (!commenterMap.has(commenterId)) {
+          const handle = c.authorHandle || (c.author ? `@${c.author.toLowerCase().replace(/[^a-z0-9]+/g, '')}` : '@viewer');
+          const isHuman = Boolean(c.signals?.humanMoment || c.classification === 'SENSITIVE');
+          commenterMap.set(commenterId, {
+            id: commenterId,
+            handle,
+            displayName: c.author || 'YouTube Viewer',
+            avatar: c.authorAvatar || null,
+            totalComments: 1,
+            episodesParticipated: 1,
+            sentimentRatio: c.sentiment === 'positive' ? 1 : 0.5,
+            tags: isHuman ? ['Human disclosure'] : ['Community member'],
+            firstSeenAt: c.createdAt || new Date().toISOString(),
+            lastSeenAt: c.createdAt || new Date().toISOString(),
+            note: 'Discovered from imported YouTube comments.',
+          });
+        } else {
+          const existing = commenterMap.get(commenterId);
+          existing.totalComments = (existing.totalComments || 1) + 1;
+        }
       });
 
       const updatedVideos = video && !(state.videos || []).some((v) => v.id === video.id)
@@ -212,6 +239,7 @@ function reducer(state, action) {
         ...state,
         comments: [...freshComments, ...(state.comments || [])],
         commentStates: newStates,
+        commenters: Array.from(commenterMap.values()),
         videos: updatedVideos,
       };
     }
@@ -303,20 +331,35 @@ export function ApplicationProvider({ children }) {
 
   const approve = useCallback((commentId) => {
     const current = stateFor(commentId);
-    void services.platform.replyToComment(commentId, current.responseText);
+    const comment = (state.comments || []).find((c) => c.id === commentId);
+
+    if (typeof navigator !== 'undefined' && navigator.clipboard && current.responseText) {
+      navigator.clipboard.writeText(current.responseText).catch(() => {});
+    }
+
+    if (typeof window !== 'undefined' && comment?.videoId) {
+      const extId = comment.externalId || (comment.id.startsWith('yt-') ? comment.id.slice(3) : null);
+      const permalink = extId
+        ? `https://www.youtube.com/watch?v=${comment.videoId}&lc=${extId}`
+        : `https://www.youtube.com/watch?v=${comment.videoId}`;
+      try {
+        window.open(permalink, '_blank', 'noopener,noreferrer');
+      } catch (_) {}
+    }
+
     const isDemo = services.mode === 'demo';
     setStatus(
       commentId,
       current.wasEdited ? 'edited' : 'approved',
       isDemo ? 'Approved fixture draft in Demo Mode' : 'Response approved',
-      isDemo ? 'Simulated approval only — no message was sent to YouTube.' : 'Response published.',
-      isDemo ? 'simulated_reply' : 'reply',
+      isDemo ? 'Simulated approval only — no message was sent to YouTube.' : 'Approved. Copied for posting on YouTube.',
+      'clipboard_copy',
     );
     showToast(
-      isDemo ? 'Demo approval recorded. No reply was sent to YouTube.' : 'Response approved and published.',
-      isDemo ? 'info' : 'success',
+      isDemo ? 'Demo approval recorded. Copied to clipboard.' : 'Response approved and copied to clipboard.',
+      'success',
     );
-  }, [services, setStatus, showToast, stateFor]);
+  }, [services.mode, state.comments, stateFor, setStatus, showToast]);
 
   const reject = useCallback((commentId) => {
     setStatus(commentId, 'rejected', 'Draft rejected', 'No reply was sent.', 'none');

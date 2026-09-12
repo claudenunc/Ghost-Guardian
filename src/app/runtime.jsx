@@ -240,13 +240,17 @@ function reducer(state, action) {
       const commenterMap = new Map(existingCommenters.map((m) => [m.id, { ...m }]));
 
       freshComments.forEach((c) => {
+        const alreadyReplied = Boolean(c.ownerReplied);
         newStates[c.id] = {
-          status: c.recommendedAction === 'silence' || c.recommendedAction === 'hide' ? 'silenced' : 'pending',
+          status: alreadyReplied
+            ? 'responded'
+            : (c.recommendedAction === 'silence' || c.recommendedAction === 'hide' ? 'silenced' : 'pending'),
           activeTone: 'warm',
           responseText: c.drafts?.warm || c.drafts?.calm || '',
           wasEdited: false,
           savedAsExample: false,
           regenerations: 0,
+          alreadyReplied,
         };
 
         const commenterId = c.commenterId || c.authorHandle || c.author || 'unknown-commenter';

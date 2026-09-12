@@ -56,6 +56,8 @@ export default async function handler(req, res) {
       order: 'relevance',
       key: apiKey,
     });
+    // Include inline replies so we can tell if the channel owner already replied.
+    commentParams.set('part', 'snippet,replies');
     if (pageToken) commentParams.set('pageToken', pageToken);
 
     const [videoResponse, commentResponse] = await Promise.all([
@@ -95,9 +97,16 @@ export default async function handler(req, res) {
     const data = await commentResponse.json();
     const rawItems = data.items || [];
 
+    const ownerChannelId = video.channelId || null;
+
     const comments = rawItems.map((item) => {
       const topComment = item.snippet?.topLevelComment?.snippet || {};
       const displayName = topComment.authorDisplayName || 'YouTube viewer';
+      // Did the channel owner already reply in this thread? (inline replies, up to 5)
+      const replies = item.replies?.comments || [];
+      const ownerReplied = ownerChannelId
+        ? replies.some((r) => r.snippet?.authorChannelId?.value === ownerChannelId)
+        : false;
       return {
         id: `yt-${item.id}`,
         externalId: item.id,
@@ -115,6 +124,7 @@ export default async function handler(req, res) {
         likeCount: topComment.likeCount || 0,
         totalReplyCount: item.snippet?.totalReplyCount || 0,
         canReply: item.snippet?.canReply ?? true,
+        ownerReplied,
       };
     });
 

@@ -98,6 +98,7 @@ export function buildCommentFromYouTube(raw, { videoId = null, policy = null } =
     likes: Number(raw.likeCount ?? raw.likes ?? 0) || 0,
     replies: Number(raw.totalReplyCount ?? raw.replies ?? 0) || 0,
     canReply: raw.canReply !== false,
+    ownerReplied: Boolean(raw.ownerReplied),
     classification,
     sentiment: rules.sentiment,
     risk: rules.risk,
@@ -153,6 +154,8 @@ export function applyClassification(comment, aiResult) {
 /** True when Guardian may ask the AI for a draft reply. */
 export function shouldDraftFor(comment) {
   if (!comment) return false;
+  // Already replied to on YouTube — don't draft again.
+  if (comment.ownerReplied) return false;
   const cls = String(comment.classification || '').toUpperCase();
   // Never draft for crisis/sensitive, hostile, or anything flagged for a human.
   if (PROTECTED.has(comment.classification) || PROTECTED.has(cls) || comment.signals?.humanMoment) return false;

@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { ApplicationError, ErrorCode } from './errors.js';
 
 const SESSION_KEY = 'ghost_guardian_demo_session_v1';
@@ -52,6 +53,7 @@ let productionToken = null;
 
 /**
  * Production authentication adapter backed by the Ghost Guardian Server API.
+ * (Legacy — retained for backward compatibility with local server mode.)
  */
 export function createProductionAuthAdapter({ apiBaseUrl = 'http://localhost:3001' } = {}) {
   return {
@@ -128,3 +130,125 @@ export function createProductionAuthAdapter({ apiBaseUrl = 'http://localhost:300
   };
 }
 
+/**
+ * Supabase authentication adapter for production deployments on Vercel.
+ * Uses Supabase Auth for sign-in, sign-up, and session management.
+ */
+export function createSupabaseAuthAdapter() {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.warn('Supabase credentials missing — falling back to unavailable auth.');
+    return createProductionAuthAdapter();
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+  // Cached session reference (updated by onAuthStateChange listener in runtime.jsx)
+  let cachedSession = null;
+
+  // Eagerly populate cached session from Supabase on creation
+  supabase.auth.getSession().then(({ data }) => {
+    if (data?.session) {
+      cachedSession = data.session;
+    }
+  });
+
+  return {
+    kind: 'supabase',
+
+    getSession() {
+      if (!cachedSession) return null;
+      return {
+        user: cachedSession.user,
+        token: cachedSession.access_token,
+        environment: 'production',
+      };
+    },
+
+    async signIn({ email, password }) {
+      if (!email || !password) {
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Email and password are required.');
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+      if (error) {
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, error.message || 'Sign in failed.');
+      }
+
+      cachedSession = data.session;
+      return {
+        user: data.session.user,
+        token: data.session.access_token,
+        environment: 'production',
+      };
+    },
+
+    async register({ email, password, name }) {
+      if (!email || !password) {
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Email and password are required.');
+      }
+
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: { name },
+        },
+      });
+
+      if (error) {
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, error.message || 'Registration failed.');
+      }
+
+      // Insert creator record into public.creators table
+      if (data.user) {
+        const { error: insertError } = await supabase.from('creators').insert({
+          user_id: data.user.id,
+          email,
+          plan_tier: 'beta',
+        });
+        if (insertError) {
+          console.warn('Failed to insert creator record:', insertError.message);
+        }
+      }
+
+      cachedSession = data.session;
+      return {
+        user: data.session?.user || data.user,
+        token: data.session?.access_token || null,
+        environment: 'production',
+      };
+    },
+
+    async signOut() {
+      const { error } = await supabase.auth.signOut();
+      cachedSession = null;
+      if (error) {
+        console.warn('Supabase sign out error:', error.message);
+      }
+    },
+
+    getCurrentUser() {
+      return cachedSession?.user ?? null;
+    },
+
+    requireAuth() {
+      const session = this.getSession();
+      if (!session) {
+        throw new ApplicationError(ErrorCode.AUTHENTICATION, 'Authentication is required. Please sign in.');
+      }
+      return session;
+    },
+
+    onAuthStateChange(cb) {
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+        cachedSession = session;
+        cb(_event, session);
+      });
+      return subscription;
+    },
+  };
+}

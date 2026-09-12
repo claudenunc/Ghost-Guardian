@@ -23,7 +23,7 @@ export default function BetaWaitlist() {
       localStorage.setItem(BYPASS_KEY, 'true');
     }
     if (localStorage.getItem(BYPASS_KEY) === 'true') {
-      navigate('/app', { replace: true });
+      navigate('/auth?bypass=true', { replace: true });
     }
   }, [navigate]);
   const [email, setEmail] = useState('');

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react';
-import { createDevelopmentAuthAdapter, createProductionAuthAdapter } from './authService';
+import { createDevelopmentAuthAdapter, createSupabaseAuthAdapter } from './authService';
 import { runtimeConfig } from './config';
 import { createBrowserWorkspaceRepository } from '../data/repositories/browserWorkspaceRepository';
 import { createSupabaseWorkspaceRepository } from '../data/repositories/supabaseWorkspaceRepository';
@@ -16,7 +16,7 @@ function createServices(mode) {
   const isProduction = mode === 'production' || import.meta.env?.VITE_GHOST_GUARDIAN_RUNTIME === 'production';
   return {
     mode,
-    auth: isDemo ? createDevelopmentAuthAdapter() : createProductionAuthAdapter(),
+    auth: isDemo ? createDevelopmentAuthAdapter() : createSupabaseAuthAdapter(),
     repositories: isDemo
       ? createDemoRepositories({ ...createDemoWorkspace() })
       : createUnavailableProductionRepositories(),
@@ -222,6 +222,21 @@ export function ApplicationProvider({ children }) {
     }
   }, [services]);
 
+  // Supabase auth state listener — keeps session in sync with Supabase
+  useEffect(() => {
+    if (services.auth.kind === 'supabase' && services.auth.onAuthStateChange) {
+      const subscription = services.auth.onAuthStateChange((_event, session) => {
+        dispatch({
+          type: 'SET_SESSION',
+          payload: session
+            ? { user: session.user, token: session.access_token, environment: 'production' }
+            : null,
+        });
+      });
+      return () => subscription.unsubscribe();
+    }
+  }, [services]);
+
   const showToast = useCallback((message, type = 'success') => {
     dispatch({ type: 'SET_TOAST', payload: { message, type, id: Date.now() } });
   }, []);
@@ -236,8 +251,20 @@ export function ApplicationProvider({ children }) {
     return session;
   }, [services]);
 
-  const signOut = useCallback(() => {
-    services.auth.signOut();
+  const signIn = useCallback(async (credentials) => {
+    const session = await services.auth.signIn(credentials);
+    dispatch({ type: 'SET_SESSION', payload: session });
+    return session;
+  }, [services]);
+
+  const register = useCallback(async (credentials) => {
+    const session = await services.auth.register(credentials);
+    dispatch({ type: 'SET_SESSION', payload: session });
+    return session;
+  }, [services]);
+
+  const signOut = useCallback(async () => {
+    await Promise.resolve(services.auth.signOut());
     dispatch({ type: 'SET_SESSION', payload: null });
   }, [services]);
 
@@ -327,7 +354,7 @@ export function ApplicationProvider({ children }) {
       if (videoId) params.set('videoId', videoId);
       if (channelId) params.set('channelId', channelId);
       if (apiKey) params.set('apiKey', apiKey);
-      const res = await fetch(`/api/youtube/comments?${params.toString()}`);
+      const res = await fetch(`/api/youtube-comments?${params.toString()}`);
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         throw new Error(data.error || `Server responded with ${res.status}`);
@@ -348,6 +375,8 @@ export function ApplicationProvider({ children }) {
     runtime: { mode: services.mode, isDemo: services.mode === 'demo', platform: services.platform, guardian: services.guardian },
     isAuthenticated: Boolean(state.session),
     startDemo,
+    signIn,
+    register,
     signOut,
     updateSettings: (updates) => dispatch({ type: 'UPDATE_SETTINGS', payload: updates }),
     updateVoice: (updates) => dispatch({ type: 'UPDATE_VOICE', payload: updates }),
@@ -374,7 +403,7 @@ export function ApplicationProvider({ children }) {
     importWorkspace,
     showToast,
     dispatch,
-  }), [approve, exportData, importWorkspace, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments, ingestComments]);
+  }), [approve, exportData, importWorkspace, signIn, register, reject, resetDemo, services, signOut, showToast, startDemo, state, stateFor, setStatus, generateAiResponse, classifyComment, fetchYouTubeComments, ingestComments]);
 
   return <ApplicationContext.Provider value={value}>{children}</ApplicationContext.Provider>;
 }
@@ -384,4 +413,3 @@ export function useApplication() {
   if (!context) throw new Error('useApplication must be used within ApplicationProvider');
   return context;
 }
-

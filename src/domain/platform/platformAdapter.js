@@ -30,7 +30,10 @@ export function createDemoPlatformAdapter() {
 }
 
 /** Real production platform adapter communicating with the Ghost Guardian Server API. */
-export function createProductionPlatformAdapter({ apiBaseUrl = 'http://localhost:3001', getAuthToken = () => null } = {}) {
+export function createProductionPlatformAdapter({ apiBaseUrl, getAuthToken = () => null } = {}) {
+  if (apiBaseUrl === undefined) {
+    apiBaseUrl = (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) || '';
+  }
   const getHeaders = () => {
     const token = getAuthToken();
     return {

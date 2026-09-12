@@ -358,6 +358,14 @@ describe('Ghost Guardian AI Pipeline & Decision Engine', () => {
       assert.ok(hasConstructive, 'Fixture must include Constructive Criticism');
       assert.ok(hasPreHandled, 'Fixture must include pre-handled comments for Handled Lane');
     });
+
+    it('derives prior interaction history context note for returning commenters such as @hollowdays', () => {
+      const workspace = createDemoWorkspace();
+      const commenter = workspace.commenters.find((c) => c.handle === '@hollowdays');
+      assert.ok(commenter, '@hollowdays commenter must exist in fixture');
+      assert.equal(commenter.handle, '@hollowdays');
+      assert.equal(commenter.note, 'Shared previous recovery journey in comments.');
+    });
   });
 
   describe('Pass 3: Creator Voice Calibration & Sentinel Command Center', () => {

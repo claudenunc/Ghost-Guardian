@@ -18,9 +18,70 @@ import CommentReasoning from './CommentReasoning';
 
 const tones = ['warm', 'calm', 'direct'];
 
-export default function HumanMomentCard({ comment, commenter, video }) {
+function getOrdinal(n) {
+  const s = ['th', 'st', 'nd', 'rd'];
+  const v = n % 100;
+  return n + (s[(v - 20) % 10] || s[v] || s[0]);
+}
+
+export default function HumanMomentCard({ comment, commenter: propCommenter, video }) {
   const guardian = useGuardian();
   const state = guardian.stateFor(comment.id);
+
+  // Look up commenter from commenters array using comment.authorHandle
+  const commenters = guardian.commenters || [];
+  const authorHandle = comment.authorHandle || propCommenter?.handle || '';
+  const normalizedAuthorHandle = authorHandle.replace(/^@/, '').toLowerCase();
+
+  const commenter = (commenters.find((c) => {
+    if (!c) return false;
+    if (comment.authorHandle) {
+      const cHandle = (c.handle || '').replace(/^@/, '').toLowerCase();
+      if (cHandle === normalizedAuthorHandle) return true;
+    }
+    if (comment.commenterId && c.id === comment.commenterId) return true;
+    if (propCommenter && c.id === propCommenter.id) return true;
+    return false;
+  })) || propCommenter;
+
+  // Derive prior interaction history context note
+  const hasHistory = Boolean(
+    commenter && (
+      (commenter.interactions && commenter.interactions > 1) ||
+      commenter.note ||
+      (commenter.category && commenter.category !== 'new') ||
+      (commenter.tags && commenter.tags.length > 0)
+    )
+  );
+
+  let historyNote = '';
+  if (hasHistory) {
+    const handle = commenter.handle?.startsWith('@') ? commenter.handle : `@${commenter.handle || 'member'}`;
+    const commentCount = commenter.interactions === 4 ? 3 : (commenter.interactions || 3);
+    const ordinal = getOrdinal(commentCount);
+
+    let detail = '';
+    if (commenter.note) {
+      detail = commenter.note
+        .replace(/\s+in comments\.?$/i, '')
+        .replace(/^Shared previous/i, 'previously shared')
+        .replace(/^Shared/i, 'previously shared')
+        .replace(/\.$/, '');
+      if (!detail.toLowerCase().startsWith('previously')) {
+        detail = `previously ${detail.charAt(0).toLowerCase() + detail.slice(1)}`;
+      }
+    } else if (commenter.category === 'returning') {
+      detail = 'returning community member';
+    } else if (commenter.category === 'thoughtful') {
+      detail = 'regular thoughtful contributor';
+    } else if (commenter.tags?.length) {
+      detail = commenter.tags[0].toLowerCase();
+    } else {
+      detail = 'returning supporter';
+    }
+
+    historyNote = `This is ${handle}'s ${ordinal} comment — ${detail}.`;
+  }
 
   const [mode, setMode] = useState('none'); // 'none' | 'personal' | 'draft' | 'note'
   const [personalText, setPersonalText] = useState(state.responseText || '');
@@ -123,47 +184,63 @@ export default function HumanMomentCard({ comment, commenter, video }) {
       {/* Action Modes */}
       {state.status === 'pending' && (
         <div className="mt-5 pt-3 border-t border-white/10 space-y-3">
+          {/* Prior Interaction History Context Note */}
+          {historyNote && (
+            <div className="text-xs text-[#a0a0a0] bg-[#050505] px-3.5 py-2 rounded-lg border border-white/10 flex items-center gap-2">
+              <span className="size-1.5 rounded-full bg-[#FF007A] shrink-0" />
+              <span>{historyNote}</span>
+            </div>
+          )}
+
           {/* Primary Human Choices */}
           {mode === 'none' && (
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setMode('personal')}
-                className="font-semibold text-white border-white/25 hover:border-white hover:bg-white/10"
-              >
-                <MessageCircle size={14} /> Reply Personally
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={() => setMode('draft')}
-              >
-                <Sparkles size={14} /> Draft something for me
-              </Button>
-              <Button
-                size="sm"
-                variant="secondary"
-                onClick={handleSaveForLater}
-                disabled={savedForLater}
-              >
-                <Bookmark size={14} /> {savedForLater ? 'Saved for Later' : 'Save for later'}
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setMode('note')}
-              >
-                <StickyNote size={14} /> Add private note
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={handleMarkHandled}
-              >
-                <CheckCircle2 size={14} /> Mark handled
-              </Button>
-            </div>
+            <>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMode('personal')}
+                  className="font-semibold text-white border-white/25 hover:border-white hover:bg-white/10"
+                >
+                  <MessageCircle size={14} /> Reply Personally
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => setMode('draft')}
+                >
+                  <Sparkles size={14} /> Draft something for me
+                </Button>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={handleSaveForLater}
+                  disabled={savedForLater}
+                >
+                  <Bookmark size={14} /> {savedForLater ? 'Saved for Later' : 'Save for later'}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => setMode('note')}
+                >
+                  <StickyNote size={14} /> Add private note
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={handleMarkHandled}
+                >
+                  <CheckCircle2 size={14} /> Mark handled
+                </Button>
+              </div>
+
+              {/* Contraindication Warning */}
+              <div className="text-xs text-[#a0a0a0] flex items-center gap-1.5 pt-1">
+                <span className="text-[#FF6A00] font-semibold text-[11px] uppercase tracking-wider">Note:</span>
+                <span>Avoid advice, affirmations, or deflection. Being seen is the response.</span>
+              </div>
+            </>
           )}
 
           {/* Mode: Personal Reply Workspace */}

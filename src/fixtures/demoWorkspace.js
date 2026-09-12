@@ -229,6 +229,8 @@ export const demoComments = [
     platform: "youtube",
     videoId: "v2",
     commenterId: "c10",
+    author: "hollowdays",
+    authorHandle: "@hollowdays",
     createdAt: hoursAgo(3),
     text: "I've been through years of pain and honestly I'm wondering whether I've lost the child inside me for good. Watching this made me feel something for the first time in a while.",
     likes: 189,

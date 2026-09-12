@@ -10,6 +10,7 @@ import {
   Lock,
   Sliders,
   History,
+  CheckCircle,
 } from 'lucide-react';
 import {
   Button,
